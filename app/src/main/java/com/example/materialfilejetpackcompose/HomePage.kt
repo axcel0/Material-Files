@@ -43,16 +43,16 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 
 @Composable
-fun MyApp() {
+fun MyApp(themeManager: ThemeManager) {
     val navController = rememberNavController()
     NavHost(navController = navController, startDestination = "home") {
         composable("home") { HomePage(navController) }
-        composable("settings") { SettingsPage(navController) }
+        composable("settings") { SettingsPage(navController, themeManager) }
     }
 }
 
 @Composable
-fun SettingsPage(navController: NavController) {
+fun SettingsPage(navController: NavController, themeManager: ThemeManager) {
     Surface {
         Column(
             modifier = Modifier
@@ -64,8 +64,8 @@ fun SettingsPage(navController: NavController) {
             Text("Settings")
             Spacer(modifier = Modifier.height(20.dp))
             Switch(
-                checked = true,
-                onCheckedChange = { /*TODO*/ },
+                checked = themeManager.darkTheme.value,
+                onCheckedChange = { themeManager.toggleTheme() },
                 modifier = Modifier.padding(16.dp)
             )
             Spacer(modifier = Modifier.height(20.dp))

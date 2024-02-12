@@ -3,24 +3,20 @@ package com.example.materialfilejetpackcompose
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Surface
-import androidx.compose.ui.Modifier
 import com.example.materialfilejetpackcompose.ui.theme.MaterialFileJetpackComposeTheme
 
 class MainActivity : ComponentActivity() {
+    private val themeManager = ThemeManager()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MaterialFileJetpackComposeTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                ) {
-                    MyApp()
-                }
+            MaterialFileJetpackComposeTheme(themeManager.darkTheme.value) {
+                MyApp(themeManager)
             }
         }
     }
+}
 
 
 //    @OptIn(ExperimentalTvMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -58,5 +54,5 @@ class MainActivity : ComponentActivity() {
 //            }
 //        }
 //    }
-}
+
 

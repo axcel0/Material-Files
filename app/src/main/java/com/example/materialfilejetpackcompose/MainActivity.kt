@@ -12,6 +12,9 @@ import com.example.materialfilejetpackcompose.ui.theme.MaterialFileJetpackCompos
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.ViewModelProvider
+import com.example.materialfilejetpackcompose.ViewModel.FileViewModel
+import com.example.materialfilejetpackcompose.ViewModel.FileViewModelFactory
 
 class MainActivity : ComponentActivity() {
 
@@ -23,8 +26,12 @@ class MainActivity : ComponentActivity() {
     private val sharedPreferences by lazy {
         getSharedPreferences(PREFERENCE_THEME, MODE_PRIVATE)
     }
+    private val fileViewModel: FileViewModel by viewModels {
+        FileViewModelFactory(applicationContext)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+
 
         super.onCreate(savedInstanceState)
         onBackPressedDispatcher.addCallback(this) {
@@ -55,7 +62,7 @@ class MainActivity : ComponentActivity() {
             }
 
             MaterialFileJetpackComposeTheme(isInDarkTheme = isDarkTheme) {
-                MyApp(isDarkTheme, onDarkModeChange)
+                MyApp(isDarkTheme, onDarkModeChange, fileViewModel)
             }
         }
     }

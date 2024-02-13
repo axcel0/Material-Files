@@ -1,4 +1,4 @@
-package com.example.materialfilejetpackcompose
+package com.example.materialfilejetpackcompose.ViewModel
 
 import android.content.Context
 import androidx.lifecycle.ViewModel

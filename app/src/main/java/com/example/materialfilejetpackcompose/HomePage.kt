@@ -45,16 +45,16 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 
 @Composable
-fun MyApp(themeManager: ThemeManager) {
+fun MyApp(isDarkTheme: Boolean, onDarkModeChange: (Boolean) -> Unit) {
     val navController = rememberNavController()
     NavHost(navController = navController, startDestination = "home") {
         composable("home") { HomePage(navController) }
-        composable("settings") { SettingsPage(navController, themeManager) }
+        composable("settings") { SettingsPage(navController, isDarkTheme, onDarkModeChange) }
     }
 }
 
 @Composable
-fun SettingsPage(navController: NavController, themeManager: ThemeManager) {
+fun SettingsPage(navController: NavController, isDarkTheme: Boolean, onDarkModeChange: (Boolean) -> Unit) {
     Surface {
         Column(
             modifier = Modifier
@@ -66,8 +66,8 @@ fun SettingsPage(navController: NavController, themeManager: ThemeManager) {
             Text("Settings")
             Spacer(modifier = Modifier.height(20.dp))
             Switch(
-                checked = themeManager.darkTheme.value,
-                onCheckedChange = { themeManager.toggleTheme() },
+                checked = isDarkTheme,
+                onCheckedChange = onDarkModeChange,
                 modifier = Modifier.padding(16.dp)
             )
             Spacer(modifier = Modifier.height(20.dp))
@@ -182,7 +182,7 @@ fun DrawerItem(icon: ImageVector, title: String, expanded: Boolean, onClick: () 
         )
         AnimatedVisibility(
             visible = expanded,
-            enter = fadeIn() + expandIn(),
+            enter = fadeIn(),
             exit = fadeOut() + shrinkOut()
         ) {
             Row(modifier = Modifier.fillMaxWidth()) {

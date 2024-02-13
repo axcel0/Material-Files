@@ -2,16 +2,15 @@ package com.example.materialfilejetpackcompose.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
-import androidx.tv.material3.ExperimentalTvMaterial3Api
-import androidx.tv.material3.MaterialTheme
-import androidx.tv.material3.darkColorScheme
-import androidx.tv.material3.lightColorScheme
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
+import androidx.compose.material3.Typography
 
-@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun MaterialFileJetpackComposeTheme(
-    isInDarkTheme: Boolean = isSystemInDarkTheme(),
-    appBarTitle: String? = null,
+    isInDarkTheme: Boolean,
     content: @Composable () -> Unit,
 ) {
     val colorScheme = if (isInDarkTheme) {
@@ -29,7 +28,7 @@ fun MaterialFileJetpackComposeTheme(
     }
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography,
+        shapes = Shapes(),
         content = content
     )
 }

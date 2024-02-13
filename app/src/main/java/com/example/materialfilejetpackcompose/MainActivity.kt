@@ -5,13 +5,27 @@ import androidx.activity.ComponentActivity
 import androidx.activity.addCallback
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import com.example.materialfilejetpackcompose.ui.theme.MaterialFileJetpackComposeTheme
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 
 class MainActivity : ComponentActivity() {
-    private var themeManager = ThemeManager()
+
+    companion object {
+        private const val PREFERENCE_THEME = "preference_theme"
+        private const val DARK_MODE_PREF = "dark_mode"
+    }
+
+    private val sharedPreferences by lazy {
+        getSharedPreferences(PREFERENCE_THEME, MODE_PRIVATE)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+
         super.onCreate(savedInstanceState)
         onBackPressedDispatcher.addCallback(this) {
 
@@ -28,9 +42,20 @@ class MainActivity : ComponentActivity() {
                     .show()
 
         }
+
         setContent {
-            MaterialFileJetpackComposeTheme(themeManager.darkTheme.value) {
-                MyApp(themeManager)
+            val isSystemInDarkTheme = isSystemInDarkTheme()
+            var isDarkTheme by remember {
+                mutableStateOf(sharedPreferences.getBoolean(DARK_MODE_PREF, isSystemInDarkTheme))
+            }
+
+            val onDarkModeChange : (Boolean) -> Unit = {
+                isDarkTheme = it
+                sharedPreferences.edit().putBoolean(DARK_MODE_PREF, it).apply()
+            }
+
+            MaterialFileJetpackComposeTheme(isInDarkTheme = isDarkTheme) {
+                MyApp(isDarkTheme, onDarkModeChange)
             }
         }
     }

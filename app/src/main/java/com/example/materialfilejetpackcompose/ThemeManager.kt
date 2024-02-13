@@ -1,5 +1,6 @@
 package com.example.materialfilejetpackcompose
 
+import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 
 class ThemeManager {
@@ -7,5 +8,6 @@ class ThemeManager {
 
     fun toggleTheme() {
         darkTheme.value = !darkTheme.value
+        Log.d("ThemeManager", "Dark theme is now: ${darkTheme.value}")
     }
 }

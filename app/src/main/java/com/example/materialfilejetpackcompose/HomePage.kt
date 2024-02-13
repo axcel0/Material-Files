@@ -11,6 +11,7 @@ import androidx.compose.animation.shrinkOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -19,6 +20,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -83,7 +85,7 @@ fun SettingsPage(navController: NavController, themeManager: ThemeManager) {
 fun HomePage(navController: NavHostController) {
     var isExpanded by remember { mutableStateOf(false) }
     val widthAnim by animateDpAsState(targetValue = if (isExpanded) 200.dp else 64.dp, label = "")
-
+    val heightAnim by animateDpAsState(targetValue = if (isExpanded) 200.dp else 64.dp, label = "")
     Surface {
         Box {
             TopAppBar(
@@ -100,11 +102,24 @@ fun HomePage(navController: NavHostController) {
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                val context = LocalContext.current
-                Button(onClick = {
-                    Toast.makeText(context, "Button clicked", Toast.LENGTH_SHORT).show()
-                }) {
-                    Text("Click me")
+                Column {
+
+                }
+                Box(
+                    modifier = Modifier
+                        .padding(start = widthAnim, top = 100.dp)
+                ) {
+                    LazyColumn {
+                        items(100) {
+                            val context = LocalContext.current
+                            Button(onClick = {
+                                Toast.makeText(context, "Button $it clicked", Toast.LENGTH_SHORT)
+                                    .show()
+                            }) {
+                                Text("Button $it")
+                            }
+                        }
+                    }
                 }
             }
             Column(
@@ -121,7 +136,7 @@ fun HomePage(navController: NavHostController) {
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 Icon(
-                    Icons.Default.Menu,
+                    imageVector = if (isExpanded) Icons.Default.Close else Icons.Default.Menu,
                     modifier = Modifier
                         .padding(top = 10.dp, start = 10.dp)
                         .clickable(

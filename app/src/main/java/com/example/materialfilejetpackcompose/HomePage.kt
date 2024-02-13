@@ -81,7 +81,7 @@ fun SettingsPage(navController: NavController, isDarkTheme: Boolean, onDarkModeC
 @Composable
 fun HomePage(navController: NavHostController, fileViewModel: FileViewModel) {
     var isExpanded by remember { mutableStateOf(false) }
-    val widthAnim by animateDpAsState(targetValue = if (isExpanded) 200.dp else 64.dp, label = "")
+    val widthAnim by animateDpAsState(targetValue = if (isExpanded) 200.dp else 50.dp, label = "")
 
     Surface {
         TopAppBar(
@@ -94,7 +94,6 @@ fun HomePage(navController: NavHostController, fileViewModel: FileViewModel) {
         Column(
             Modifier
                 .fillMaxSize()
-                .animateContentSize(),
         ) {
             //distance between top app bar and content
             Spacer(modifier = Modifier.height(60.dp))
@@ -112,15 +111,14 @@ fun HomePage(navController: NavHostController, fileViewModel: FileViewModel) {
                 .padding(horizontal = 10.dp, vertical = 10.dp)
                 .onFocusChanged { focusState ->
                     isExpanded = focusState.isFocused
-                }
-                .animateContentSize(),
+                },
             horizontalAlignment = Alignment.Start,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Icon(
                 imageVector = if (isExpanded) Icons.Default.Close else Icons.Default.Menu,
                 modifier = Modifier
-                    .padding(top = 10.dp, start = 10.dp)
+                    .padding(top = 10.dp)
                     .clickable(
                         onClick = {
                             isExpanded = !isExpanded
@@ -130,8 +128,6 @@ fun HomePage(navController: NavHostController, fileViewModel: FileViewModel) {
                 tint = MaterialTheme.colorScheme.onPrimary
             )
             Column {
-                Modifier
-                    .padding(top = 10.dp, start = 10.dp)
                 DrawerItem(Icons.Default.Folder, "All Files", isExpanded) {}
                 DrawerItem(Icons.Default.Photo, "Photos", isExpanded) {}
                 DrawerItem(Icons.Default.VideoLibrary, "Videos", isExpanded) {}
@@ -151,7 +147,7 @@ fun DrawerItem(icon: ImageVector, title: String, expanded: Boolean, onClick: () 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 10.dp)
+            .padding(vertical = 8.dp)
             .clickable { onClick() },
         verticalAlignment = Alignment.CenterVertically
     ) {

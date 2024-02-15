@@ -141,7 +141,6 @@ fun HomePage(navController: NavHostController, fileViewModel: FileViewModel) {
     }
 }
 
-
 @Composable
 fun DrawerItem(icon: ImageVector, title: String, expanded: Boolean, onClick: () -> Unit) {
     Row(

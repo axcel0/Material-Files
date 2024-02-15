@@ -8,7 +8,13 @@
     <uses-feature
         android:name="android.software.leanback"
         android:required="false" />
-
+    <!-- Add these permissions for the file manager functionality -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
     <application
         android:allowBackup="true"
         android:banner="@mipmap/ic_launcher"

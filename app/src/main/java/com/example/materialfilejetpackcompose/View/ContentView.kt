@@ -1,5 +1,6 @@
 package com.example.materialfilejetpackcompose.View
 
+import android.os.Environment
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +16,7 @@ import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.ViewModule
 import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -32,6 +34,7 @@ class ContentView(private val fileViewModel: FileViewModel) {
 
     @Composable
     fun Content() {
+
         var isGridView by remember { mutableStateOf(false) }
         var sortType by remember { mutableStateOf(SortType.NAME) }
         var isAscending by remember { mutableStateOf(true) }
@@ -99,6 +102,8 @@ class ContentView(private val fileViewModel: FileViewModel) {
                 }
 
             }
+            HorizontalDivider()
+
         }
     }
 

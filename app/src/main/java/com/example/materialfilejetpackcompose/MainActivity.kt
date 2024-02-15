@@ -1,9 +1,13 @@
 package com.example.materialfilejetpackcompose
 
+import android.content.pm.PackageManager
 import android.os.Bundle
+import android.os.Environment
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.addCallback
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.getValue
@@ -31,8 +35,30 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        if (packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)) {
+            // App is running on TV, load the directory without asking for permissions
+            fileViewModel.getFileList(Environment.getExternalStorageDirectory())
+        } else {
+            // App is not running on TV, request permissions as usual
+            val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
+                if (permissions.all { it.value }) {
+                    fileViewModel.getFileList(Environment.getExternalStorageDirectory())
+                } else {
+                    Toast.makeText(this, "Permissions denied", Toast.LENGTH_SHORT).show()
+                }
+            }
 
+            requestPermissionLauncher.launch(arrayOf(
+                android.Manifest.permission.READ_EXTERNAL_STORAGE,
+                android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+            ))
+        }
 
+        fileViewModel.currentDirectory.observe(this) {
+            if (it != null) {
+                title = it.name
+            }
+        }
         super.onCreate(savedInstanceState)
         onBackPressedDispatcher.addCallback(this) {
 

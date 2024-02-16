@@ -9,7 +9,13 @@ import androidx.activity.addCallback
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.appcompat.app.AlertDialog
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import com.example.materialfilejetpackcompose.ui.theme.MaterialFileJetpackComposeTheme
@@ -33,8 +39,9 @@ class MainActivity : ComponentActivity() {
     private val fileViewModel: FileViewModel by viewModels {
         FileViewModelFactory(applicationContext)
     }
-
     override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
         if (packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)) {
             // App is running on TV, load the directory without asking for permissions
             fileViewModel.getFileList(Environment.getExternalStorageDirectory())
@@ -59,21 +66,12 @@ class MainActivity : ComponentActivity() {
                 title = it.name
             }
         }
-        super.onCreate(savedInstanceState)
         onBackPressedDispatcher.addCallback(this) {
-
-                //add dialog to confirm exit
-                MaterialAlertDialogBuilder(this@MainActivity)
-                    .setTitle("Exit")
-                    .setMessage("Are you sure you want to exit?")
-                    .setPositiveButton("Yes") { _, _ ->
-                        finish()
-                    }
-                    .setNegativeButton("No") { _, _ ->
-                        // Respond to negative button press
-                    }
-                    .show()
-
+            if (fileViewModel.directoryStack.isNotEmpty()) {
+                fileViewModel.getFileList()
+            } else {
+                finish()
+            }
         }
 
         setContent {
@@ -81,6 +79,8 @@ class MainActivity : ComponentActivity() {
             var isDarkTheme by remember {
                 mutableStateOf(sharedPreferences.getBoolean(DARK_MODE_PREF, isSystemInDarkTheme))
             }
+
+            var isExitDialogShown by remember { mutableStateOf(false) }
 
             val onDarkModeChange : (Boolean) -> Unit = {
                 isDarkTheme = it
@@ -92,6 +92,34 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+}
+
+@Composable
+fun ExitAlertDialog(
+    title: String,
+    message: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = { Text(message) },
+        confirmButton = {
+            Button(
+                onClick = onConfirm
+            ) {
+                Text("Exit")
+            }
+        },
+        dismissButton = {
+            Button(
+                onClick = onDismiss
+            ) {
+                Text("Cancel")
+            }
+        }
+    )
 }
 
 

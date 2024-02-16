@@ -1,5 +1,6 @@
 package com.example.materialfilejetpackcompose
 
+import android.app.LauncherActivity
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
@@ -15,10 +16,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
@@ -50,30 +55,55 @@ fun MyApp(isDarkTheme: Boolean, onDarkModeChange: (Boolean) -> Unit, fileViewMod
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsPage(navController: NavController, isDarkTheme: Boolean, onDarkModeChange: (Boolean) -> Unit) {
-    Surface {
-        Column(
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Settings") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.navigateUp() }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                    }
+                }
+            )
+        }
+    ) {innerPadding ->
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(innerPadding)
         ) {
-            Text("Settings")
-            Spacer(modifier = Modifier.height(20.dp))
-            Switch(
-                checked = isDarkTheme,
-                onCheckedChange = onDarkModeChange,
-                modifier = Modifier.padding(16.dp)
-            )
-            Spacer(modifier = Modifier.height(20.dp))
-            Button(onClick = {
-                navController.navigate("home")
-            }) {
-                Text("Go back")
+//            item {
+//                ListItem(
+//                    text = "Dark Mode",
+//                    icon = Icons.Default.Nightlight,
+//                    onClick = {
+//                        onDarkModeChange(!isDarkTheme)
+//                    },
+//                    trailing = {
+//                        Switch(
+//                            checked = isDarkTheme,
+//                            onCheckedChange = onDarkModeChange
+//                        )
+//                    }
+//                )
+//            }
+            item {
+                Text(
+                    text = "About this app",
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(vertical = 16.dp)
+                )
+            }
+            item {
+                Text(
+                    text = "This app is a File Explorer made with Kotlin Jetpack Compose and is used for personal purposes."
+                )
             }
         }
+
     }
 }
 

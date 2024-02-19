@@ -3,6 +3,7 @@ package com.example.materialfilejetpackcompose
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Environment
+import android.view.KeyEvent
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.addCallback
@@ -39,17 +40,37 @@ class MainActivity : ComponentActivity() {
     private val fileViewModel: FileViewModel by viewModels {
         FileViewModelFactory(applicationContext)
     }
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        return if (keyCode == KeyEvent.KEYCODE_BACK) {
+            val currentDirectory = fileViewModel.currentDirectory.value
+            if (currentDirectory?.parentFile != null) {
+                fileViewModel.loadInternalStorage(currentDirectory.parentFile!!)
+            } else {
+                finish()
+            }
+            true
+        } else {
+            super.onKeyDown(keyCode, event)
+        }
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        onBackPressedDispatcher.addCallback(this) {
+            val currentDirectory = fileViewModel.currentDirectory.value
+            if (currentDirectory?.parentFile != null) {
+                fileViewModel.loadInternalStorage(currentDirectory.parentFile!!)
+            } else {
+                finish()
+            }
+        }
         if (packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)) {
             // App is running on TV, load the directory without asking for permissions
-            fileViewModel.getFileList(Environment.getExternalStorageDirectory())
+            fileViewModel.loadInternalStorage(Environment.getExternalStorageDirectory())
         } else {
             // App is not running on TV, request permissions as usual
             val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
                 if (permissions.all { it.value }) {
-                    fileViewModel.getFileList(Environment.getExternalStorageDirectory())
+                    fileViewModel.loadInternalStorage(Environment.getExternalStorageDirectory())
                 } else {
                     Toast.makeText(this, "Permissions denied", Toast.LENGTH_SHORT).show()
                 }
@@ -61,6 +82,9 @@ class MainActivity : ComponentActivity() {
             ))
         }
 
+        fileViewModel.currentPath.observe(this) {
+            title = it
+        }
         fileViewModel.currentDirectory.observe(this) {
             if (it != null) {
                 title = it.name
@@ -68,11 +92,12 @@ class MainActivity : ComponentActivity() {
         }
         onBackPressedDispatcher.addCallback(this) {
             if (fileViewModel.directoryStack.isNotEmpty()) {
-                fileViewModel.getFileList()
+                fileViewModel.loadInternalStorage()
             } else {
                 finish()
             }
         }
+
 
         setContent {
             val isSystemInDarkTheme = isSystemInDarkTheme()

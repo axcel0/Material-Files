@@ -6,7 +6,7 @@ import android.os.Environment
 import android.view.KeyEvent
 import android.widget.Toast
 import androidx.activity.ComponentActivity
-import androidx.activity.addCallback
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -19,9 +19,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import com.example.materialfilejetpackcompose.ui.theme.MaterialFileJetpackComposeTheme
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.example.materialfilejetpackcompose.View.HomePage
+import com.example.materialfilejetpackcompose.View.SearchPageView
+import com.example.materialfilejetpackcompose.View.SettingsPageView
 import com.example.materialfilejetpackcompose.ViewModel.FileViewModel
 import com.example.materialfilejetpackcompose.ViewModel.FileViewModelFactory
+import kotlinx.coroutines.android.awaitFrame
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
@@ -33,32 +42,26 @@ class MainActivity : ComponentActivity() {
     private val sharedPreferences by lazy {
         getSharedPreferences(PREFERENCE_THEME, MODE_PRIVATE)
     }
+
     private val fileViewModel: FileViewModel by viewModels {
         FileViewModelFactory(applicationContext)
     }
-    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+
+    /*override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         return if (keyCode == KeyEvent.KEYCODE_BACK) {
             val currentDirectory = fileViewModel.currentDirectory.value
             if (currentDirectory?.parentFile != null) {
                 fileViewModel.loadInternalStorage(currentDirectory.parentFile!!)
-            } else {
-                finish()
             }
             true
         } else {
             super.onKeyDown(keyCode, event)
         }
-    }
+    }*/
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        onBackPressedDispatcher.addCallback(this) {
-            val currentDirectory = fileViewModel.currentDirectory.value
-            if (currentDirectory?.parentFile != null) {
-                fileViewModel.loadInternalStorage(currentDirectory.parentFile!!)
-            } else {
-                finish()
-            }
-        }
+
         if (packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)) {
             // App is running on TV, load the directory without asking for permissions
             fileViewModel.loadInternalStorage(Environment.getExternalStorageDirectory())
@@ -81,19 +84,12 @@ class MainActivity : ComponentActivity() {
         fileViewModel.currentPath.observe(this) {
             title = it
         }
+
         fileViewModel.currentDirectory.observe(this) {
             if (it != null) {
                 title = it.name
             }
         }
-        onBackPressedDispatcher.addCallback(this) {
-            if (fileViewModel.directoryStack.isNotEmpty()) {
-                fileViewModel.loadInternalStorage()
-            } else {
-                finish()
-            }
-        }
-
 
         setContent {
             val isSystemInDarkTheme = isSystemInDarkTheme()
@@ -101,15 +97,53 @@ class MainActivity : ComponentActivity() {
                 mutableStateOf(sharedPreferences.getBoolean(DARK_MODE_PREF, isSystemInDarkTheme))
             }
 
-            var isExitDialogShown by remember { mutableStateOf(false) }
-
             val onDarkModeChange : (Boolean) -> Unit = {
                 isDarkTheme = it
                 sharedPreferences.edit().putBoolean(DARK_MODE_PREF, it).apply()
             }
 
+            var isExitDialogShown by remember { mutableStateOf(false) }
+            BackHandler {
+                val currentDirectory = fileViewModel.currentDirectory.value
+                val parentFileExists = currentDirectory?.parentFile?.exists() == true
+
+                if (!parentFileExists) {
+                    isExitDialogShown = !isExitDialogShown
+                } else {
+                    fileViewModel.loadInternalStorage(currentDirectory!!.parentFile)
+                }
+            }
+
             MaterialFileJetpackComposeTheme(isInDarkTheme = isDarkTheme) {
-                MyApp(isDarkTheme, onDarkModeChange, fileViewModel)
+                // NavHost for navigation
+                val navController = rememberNavController()
+                NavHost(navController = navController, startDestination = "home") {
+                    composable("home") {
+                        HomePage(navController, fileViewModel)
+                    }
+                    composable("settings") {
+                        val settingsPageView by lazy { SettingsPageView(navController) }
+                        settingsPageView.SettingsPage(isDarkTheme, onDarkModeChange)
+                    }
+                    composable("search") {
+                        val searchPageView by lazy { SearchPageView(navController, fileViewModel) }
+                        searchPageView.SearchPage()
+                    }
+                }
+
+                // Exit dialog
+                if (isExitDialogShown) {
+                    ExitAlertDialog(
+                        title = "Exit",
+                        message = "Are you sure you want to exit?",
+                        onConfirm = {
+                            finish()
+                        },
+                        onDismiss = {
+                            isExitDialogShown = false
+                        }
+                    )
+                }
             }
         }
     }

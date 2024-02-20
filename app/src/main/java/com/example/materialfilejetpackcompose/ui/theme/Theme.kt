@@ -15,14 +15,18 @@ fun MaterialFileJetpackComposeTheme(
 ) {
     val colorScheme = if (isInDarkTheme) {
         darkColorScheme(
-            primary = Purple80,
-            secondary = PurpleGrey80,
-            tertiary = Pink80
+            primary = Black,
+            secondary = Black,
+            tertiary = Pink80,
+            background = Black,
+            onPrimary = LightGrey,
+            onSurface = White,
+            onBackground = White,
         )
     } else {
         lightColorScheme(
-            primary = Purple40,
-            secondary = PurpleGrey40,
+            primary = White,
+            secondary = White,
             tertiary = Pink40
         )
     }

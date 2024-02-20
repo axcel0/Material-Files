@@ -6,6 +6,7 @@ import android.net.Uri
 import android.os.Environment
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +20,8 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.material.BottomAppBar
 import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.ListItem
@@ -28,12 +31,14 @@ import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.CopyAll
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.ViewModule
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -66,9 +71,11 @@ class ContentView(private val fileViewModel: FileViewModel) {
         var sortOrder by remember { mutableStateOf("ascending") }
         var expanded by remember { mutableStateOf(false) }
         val currentDirectory by fileViewModel.currentDirectory.observeAsState()
-        val selectedFiles = fileViewModel.selectedFiles.value ?: emptySet()
+        val selectedFiles = fileViewModel.selectedFiles.observeAsState()
         var sortType by remember { mutableStateOf(SortType.NAME) }
         var isAscending by remember { mutableStateOf(true) }
+        var isFileOperationExpanded by remember { mutableStateOf(false) }
+
         Column {
             Row(
                 modifier = Modifier
@@ -133,7 +140,6 @@ class ContentView(private val fileViewModel: FileViewModel) {
                 }
 
             }
-//            HorizontalDivider()
             if (isGridView) {
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(3),
@@ -141,47 +147,31 @@ class ContentView(private val fileViewModel: FileViewModel) {
                 ) {
                     when (sortType) {
                         SortType.NAME -> {
-                            if (isAscending) {
-                                items(files.sortedBy { it.name }) { file ->
-                                    FileItem(file, context, fileViewModel, isGridView)
-                                }
-                            } else {
-                                items(files.sortedByDescending { it.name }) { file ->
-                                    FileItem(file, context, fileViewModel, isGridView)
-                                }
+                            val sortedFiles = files!!.sortedBy { it.name }
+                            if (!isAscending) sortedFiles.reversed()
+                            items(sortedFiles) { file ->
+                                FileItem(file, context, fileViewModel, isGridView)
                             }
                         }
                         SortType.DATE -> {
-                            if (isAscending) {
-                                items(files.sortedBy { it.lastModified() }) { file ->
-                                    FileItem(file, context, fileViewModel, isGridView)
-                                }
-                            } else {
-                                items(files.sortedByDescending { it.lastModified() }) { file ->
-                                    FileItem(file, context, fileViewModel, isGridView)
-                                }
+                            val sortedFiles = files!!.sortedBy { it.lastModified() }
+                            if (!isAscending) sortedFiles.reversed()
+                            items(sortedFiles) { file ->
+                                FileItem(file, context, fileViewModel, isGridView)
                             }
                         }
                         SortType.SIZE -> {
-                            if (isAscending) {
-                                items(files.sortedBy { it.length() }) { file ->
-                                    FileItem(file, context, fileViewModel, isGridView)
-                                }
-                            } else {
-                                items(files.sortedByDescending { it.length() }) { file ->
-                                    FileItem(file, context, fileViewModel, isGridView)
-                                }
+                            val sortedFiles = files!!.sortedBy { it.length() }
+                            if (!isAscending) sortedFiles.reversed()
+                            items(sortedFiles) { file ->
+                                FileItem(file, context, fileViewModel, isGridView)
                             }
                         }
                         SortType.TYPE -> {
-                            if (isAscending) {
-                                items(files.sortedBy { it.extension }) { file ->
-                                    FileItem(file, context, fileViewModel, isGridView)
-                                }
-                            } else {
-                                items(files.sortedByDescending { it.extension }) { file ->
-                                    FileItem(file, context, fileViewModel, isGridView)
-                                }
+                            val sortedFiles = files!!.sortedBy { it.extension }
+                            if (!isAscending) sortedFiles.reversed()
+                            items(sortedFiles) { file ->
+                                FileItem(file, context, fileViewModel, isGridView)
                             }
                         }
                     }
@@ -192,66 +182,44 @@ class ContentView(private val fileViewModel: FileViewModel) {
                 ) {
                     when (sortType) {
                         SortType.NAME -> {
-                            val sortedFiles = files.sortedBy { it.name }
-                            if (isAscending) {
-                                items(sortedFiles) { file ->
-                                    FileItem(file, context, fileViewModel, isGridView)
-                                }
-                            } else {
-                                items(sortedFiles.sortedByDescending { it.name }) { file ->
-                                    FileItem(file, context, fileViewModel, isGridView)
-                                }
+                            val sortedFiles = files!!.sortedBy { it.name }
+                            if (!isAscending) sortedFiles.reversed()
+                            items(sortedFiles) { file ->
+                                FileItem(file, context, fileViewModel, isGridView)
                             }
                         }
                         SortType.DATE -> {
-                            val sortedFiles = files.sortedBy { it.lastModified() }
-                            if (isAscending) {
-                                items(sortedFiles) { file ->
-                                    FileItem(file, context, fileViewModel, isGridView)
-                                }
-                            } else {
-                                items(sortedFiles.sortedByDescending { it.lastModified() }) { file ->
-                                    FileItem(file, context, fileViewModel, isGridView)
-                                }
+                            val sortedFiles = files!!.sortedBy { it.lastModified() }
+                            if (!isAscending) sortedFiles.reversed()
+                            items(sortedFiles) { file ->
+                                FileItem(file, context, fileViewModel, isGridView)
                             }
                         }
                         SortType.SIZE -> {
-                            val sortedFiles = files.sortedBy { it.length() }
-                            if (isAscending) {
-                                items(sortedFiles) { file ->
-                                    FileItem(file, context, fileViewModel, isGridView)
-                                }
-                            } else {
-                                items(sortedFiles.sortedByDescending { it.length() }) { file ->
-                                    FileItem(file, context, fileViewModel, isGridView)
-                                }
+                            val sortedFiles = files!!.sortedBy { it.length() }
+                            if (!isAscending) sortedFiles.reversed()
+                            items(sortedFiles) { file ->
+                                FileItem(file, context, fileViewModel, isGridView)
                             }
                         }
                         SortType.TYPE -> {
-                            val sortedFiles = files.sortedBy { it.extension }
-                            if (isAscending) {
-                                items(sortedFiles) { file ->
-                                    FileItem(file, context, fileViewModel, isGridView)
-                                }
-                            } else {
-                                items(sortedFiles.sortedByDescending { it.extension }) { file ->
-                                    FileItem(file, context, fileViewModel, isGridView)
-                                }
+                            val sortedFiles = files!!.sortedBy { it.extension }
+                            if (!isAscending) sortedFiles.reversed()
+                            items(sortedFiles) { file ->
+                                FileItem(file, context, fileViewModel, isGridView)
                             }
                         }
                     }
                 }
             }
-
         }
-
-
-
     }
+
     @OptIn(ExperimentalMaterialApi::class)
     @Composable
     fun FileItem(file: File, context: Context, fileViewModel: FileViewModel, isGridView: Boolean) {
         var isSelected by remember { mutableStateOf(false) }
+        val isDarkMode = isSystemInDarkTheme()
 
         ListItem(
             text = {
@@ -280,13 +248,22 @@ class ContentView(private val fileViewModel: FileViewModel) {
                 .clickable {
                     if (file.isDirectory) {
                         fileViewModel.loadInternalStorage(file)
+                    } else if (fileViewModel.isFilePhoto(file)) {
+                        fileViewModel.openPhotoFile(file)
                     } else {
-                        val intent = Intent(Intent.ACTION_VIEW)
-                        intent.data = Uri.fromFile(file)
-                        context.startActivity(intent)
+//                        val intent = Intent(Intent.ACTION_VIEW)
+//                        intent.data = Uri.fromFile(file)
+//                        context.startActivity(intent)
                     }
                 }
-                .background(if (isSelected) Color.LightGray else Color.Transparent)
+                .background(
+                    if (!isSelected)
+                        Color.Transparent
+                    else if (isDarkMode)
+                        Color(0x33FFFFFF)
+                    else
+                        Color(0x80000000)
+                )
                 .padding(8.dp),
             trailing = {
                 Checkbox(
@@ -300,19 +277,8 @@ class ContentView(private val fileViewModel: FileViewModel) {
                         }
                     }
                 )
-                if (!file.isDirectory) {
-                    IconButton(onClick = {
-                        val destination = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), file.name)
-                        Files.copy(file.toPath(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING)
-                    }) {
-                        Icon(
-                            imageVector = Icons.Filled.Download,
-                            contentDescription = "Download"
-                        )
-                    }
-                }
             }
         )
-        HorizontalDivider()
+        Divider()
     }
 }

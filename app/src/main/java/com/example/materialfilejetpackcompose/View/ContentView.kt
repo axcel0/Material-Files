@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -31,7 +32,6 @@ import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.ViewModule
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -188,49 +188,53 @@ class ContentView(private val fileViewModel: FileViewModel) {
                 }
             } else {
                 LazyColumn(
-                    modifier = Modifier.padding(20.dp)
+                    modifier = Modifier.fillMaxSize()
                 ) {
                     when (sortType) {
                         SortType.NAME -> {
+                            val sortedFiles = files.sortedBy { it.name }
                             if (isAscending) {
-                                items(files.sortedBy { it.name }) { file ->
+                                items(sortedFiles) { file ->
                                     FileItem(file, context, fileViewModel, isGridView)
                                 }
                             } else {
-                                items(files.sortedByDescending { it.name }) { file ->
+                                items(sortedFiles.sortedByDescending { it.name }) { file ->
                                     FileItem(file, context, fileViewModel, isGridView)
                                 }
                             }
                         }
                         SortType.DATE -> {
+                            val sortedFiles = files.sortedBy { it.lastModified() }
                             if (isAscending) {
-                                items(files.sortedBy { it.lastModified() }) { file ->
+                                items(sortedFiles) { file ->
                                     FileItem(file, context, fileViewModel, isGridView)
                                 }
                             } else {
-                                items(files.sortedByDescending { it.lastModified() }) { file ->
+                                items(sortedFiles.sortedByDescending { it.lastModified() }) { file ->
                                     FileItem(file, context, fileViewModel, isGridView)
                                 }
                             }
                         }
                         SortType.SIZE -> {
+                            val sortedFiles = files.sortedBy { it.length() }
                             if (isAscending) {
-                                items(files.sortedBy { it.length() }) { file ->
+                                items(sortedFiles) { file ->
                                     FileItem(file, context, fileViewModel, isGridView)
                                 }
                             } else {
-                                items(files.sortedByDescending { it.length() }) { file ->
+                                items(sortedFiles.sortedByDescending { it.length() }) { file ->
                                     FileItem(file, context, fileViewModel, isGridView)
                                 }
                             }
                         }
                         SortType.TYPE -> {
+                            val sortedFiles = files.sortedBy { it.extension }
                             if (isAscending) {
-                                items(files.sortedBy { it.extension }) { file ->
+                                items(sortedFiles) { file ->
                                     FileItem(file, context, fileViewModel, isGridView)
                                 }
                             } else {
-                                items(files.sortedByDescending { it.extension }) { file ->
+                                items(sortedFiles.sortedByDescending { it.extension }) { file ->
                                     FileItem(file, context, fileViewModel, isGridView)
                                 }
                             }

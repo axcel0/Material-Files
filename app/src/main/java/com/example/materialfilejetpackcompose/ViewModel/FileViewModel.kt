@@ -1,9 +1,15 @@
 package com.example.materialfilejetpackcompose.ViewModel
 
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.Environment
+import android.os.storage.StorageManager
+import androidx.core.app.ActivityCompat.startActivityForResult
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.example.materialfilejetpackcompose.MainActivity
 import java.io.File
 import java.util.Stack
 
@@ -23,32 +29,54 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
     val selectedFiles: MutableLiveData<Set<File>?> = _selectedFiles
 
     fun loadInternalStorage(directory: File? = null) {
-        if (directory != null) {
-            val path = directory.absolutePath
-            directoryStack.push(directory)
-            _currentPath.value = directoryStack.joinToString(separator = "/") { it.name }
+        val path = directory?.absolutePath
+        directoryStack.push(directory)
+        _currentPath.value = directoryStack.joinToString(separator = "/") { it.name }
+        if (path != null) {
             if (path.contains("/Android/data") || path.contains("/Android/obb")) {
                 return
             }
-            (files as MutableLiveData).value = directory.listFiles()?.toList()
-            (currentDirectory as MutableLiveData).value = directory
-        } else {
-            if (directoryStack.isNotEmpty()) {
-                val parentDirectory = directoryStack.pop()
-                if (parentDirectory != null) {
-                    _currentPath.value = directoryStack.joinToString(separator = "/") { it.name }
-                    loadInternalStorage(parentDirectory)
-                } else {
-                    _currentPath.value = "/"
-                }
-            }
         }
+        if (directory != null) {
+            (files as MutableLiveData).value = directory.listFiles()?.toList()
+        }
+        (currentDirectory as MutableLiveData).value = directory
     }
 
-    fun searchFiles(fileList: LiveData<List<File>>, query: String): LiveData<List<File>> {
-        val searchResults = fileList.value?.filter { it.name.contains(query, ignoreCase = true) }
-        (files as MutableLiveData).value = searchResults
-        return files
+    fun loadPhotosOnly(directory: File? = null) {
+        val photoExtensions = listOf("jpg", "png", "jpeg", "gif")
+        loadFilesWithExtensions(directory, photoExtensions)
+    }
+
+    fun loadVideosOnly(directory: File? = null) {
+        val videoExtensions = listOf("mp4", "avi", "flv", "mov")
+        loadFilesWithExtensions(directory, videoExtensions)
+    }
+
+    fun loadAudiosOnly(directory: File? = null) {
+        val audioExtensions = listOf("mp3", "wav", "ogg", "flac")
+        loadFilesWithExtensions(directory, audioExtensions)
+    }
+
+    private fun loadFilesWithExtensions(directory: File? = null, extensions: List<String>) {
+        val path = directory?.absolutePath
+        directoryStack.push(directory)
+        _currentPath.postValue(directoryStack.joinToString(separator = "/") { it.name })
+        if (path != null) {
+            if (path.contains("/Android/data") || path.contains("/Android/obb")) {
+                return
+            }
+        }
+        if (directory != null) {
+            val filteredFiles = directory.listFiles()?.filter { it.extension in extensions }
+            (files as MutableLiveData).postValue(filteredFiles)
+        }
+        (currentDirectory as MutableLiveData).postValue(directory)
+    }
+    fun searchFiles(query: String) {
+        val currentFiles = files.value ?: return
+        val filteredFiles = currentFiles.filterTo(mutableListOf()) { it.name.contains(query, ignoreCase = true) }
+        (files as MutableLiveData).value = filteredFiles
     }
 
     fun addSelectedFile(file: File) {

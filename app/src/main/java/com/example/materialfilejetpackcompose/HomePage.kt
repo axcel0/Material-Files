@@ -1,9 +1,6 @@
 package com.example.materialfilejetpackcompose
 
-import android.app.LauncherActivity
-import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -12,19 +9,19 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.Composable
@@ -36,7 +33,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
@@ -112,14 +110,67 @@ fun SettingsPage(navController: NavController, isDarkTheme: Boolean, onDarkModeC
 fun HomePage(navController: NavHostController, fileViewModel: FileViewModel) {
     var isExpanded by remember { mutableStateOf(false) }
     val widthAnim by animateDpAsState(targetValue = if (isExpanded) 200.dp else 50.dp, label = "")
+    var searchQuery by remember { mutableStateOf("") }
+    var isSearchBarVisible by remember { mutableStateOf(false) }
 
     Surface {
+        val focusManager = LocalFocusManager.current
         TopAppBar(
             modifier = Modifier
                 .padding(start = widthAnim)
                 .fillMaxWidth(),
-            title = { Text("Material Files", color = MaterialTheme.colorScheme.onPrimary) },
-            colors = topAppBarColors(containerColor = MaterialTheme.colorScheme.tertiary)
+            title = {
+                if (isSearchBarVisible) {
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { newValue ->
+                            searchQuery = newValue
+                            if (newValue.isNotEmpty()) {
+                                fileViewModel.searchFiles(newValue)
+                            } else {
+                                fileViewModel.currentDirectory.value?.let {
+                                    fileViewModel.loadInternalStorage(it)
+                                }
+                            }
+                        },
+                        placeholder = { Text("Search") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                        keyboardActions = KeyboardActions(onSearch = {
+                            isSearchBarVisible = false
+                            focusManager.clearFocus()
+                        }),
+                        modifier = Modifier.onFocusChanged { focusState ->
+                            if (!focusState.isFocused) {
+                                //move cursor to left when focus is lost
+                                searchQuery = ""
+                                fileViewModel.currentDirectory.value?.let {
+                                    fileViewModel.loadInternalStorage(it)
+                                }
+                            }else if (focusState.isFocused){
+                                //move cursor to right when focus is gained
+                                searchQuery = ""
+                            }
+                        }
+                    )
+                } else {
+                    Text("Material Files", style = MaterialTheme.typography.bodyMedium)
+                }
+            },
+            actions = {
+                IconButton(onClick = {
+                    isSearchBarVisible = !isSearchBarVisible
+                    if (!isSearchBarVisible) {
+                        searchQuery = ""
+                        fileViewModel.currentDirectory.value?.let {
+                            fileViewModel.loadInternalStorage(it)
+                        }
+                    }
+                }) {
+                    Icon(Icons.Default.Search, contentDescription = "Search")
+                }
+            },
+            colors = topAppBarColors(containerColor = MaterialTheme.colorScheme.onPrimary)
         )
         Column(
             Modifier
@@ -128,7 +179,10 @@ fun HomePage(navController: NavHostController, fileViewModel: FileViewModel) {
             //distance between top app bar and content
             Spacer(modifier = Modifier.height(60.dp))
 
-            Column {
+            Column(
+                Modifier
+                    .padding(start = widthAnim)
+            ) {
                 val contentView by lazy { ContentView(fileViewModel) }
                 contentView.Content()
             }
@@ -158,10 +212,26 @@ fun HomePage(navController: NavHostController, fileViewModel: FileViewModel) {
                 tint = MaterialTheme.colorScheme.onPrimary
             )
             Column {
-                DrawerItem(Icons.Default.Folder, "All Files", isExpanded) {}
-                DrawerItem(Icons.Default.Photo, "Photos", isExpanded) {}
-                DrawerItem(Icons.Default.VideoLibrary, "Videos", isExpanded) {}
-                DrawerItem(Icons.Default.AudioFile, "Audios", isExpanded) {}
+                DrawerItem(Icons.Default.Folder, "All Files", isExpanded) {
+                    fileViewModel.currentDirectory.value?.let {
+                        fileViewModel.loadInternalStorage(it)
+                    }
+                }
+                DrawerItem(Icons.Default.Photo, "Photos", isExpanded) {
+                    fileViewModel.currentDirectory.value?.let {
+                        fileViewModel.loadPhotosOnly(it)
+                    }
+                }
+                DrawerItem(Icons.Default.VideoLibrary, "Videos", isExpanded) {
+                    fileViewModel.currentDirectory.value?.let {
+                        fileViewModel.loadVideosOnly(it)
+                    }
+                }
+                DrawerItem(Icons.Default.AudioFile, "Audios", isExpanded) {
+                    fileViewModel.currentDirectory.value?.let {
+                        fileViewModel.loadAudiosOnly(it)
+                    }
+                }
             }
             DrawerItem(Icons.Default.Settings, "Settings", isExpanded) {
                 navController.navigate("settings")

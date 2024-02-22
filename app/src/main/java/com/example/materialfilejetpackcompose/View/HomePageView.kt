@@ -196,7 +196,7 @@ fun HomePage(navController: NavHostController, fileViewModel: FileViewModel) {
                     Column {
                         IconButton(
                             onClick = {
-                                fileViewModel.copyFiles(selectedFiles.value)
+                                fileViewModel.copyFiles(selectedFiles.value!!)
                             }
                         ) {
                             Icon(

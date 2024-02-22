@@ -39,6 +39,7 @@ import androidx.compose.material.icons.filled.ViewModule
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -147,29 +148,29 @@ class ContentView(private val fileViewModel: FileViewModel) {
                 ) {
                     when (sortType) {
                         SortType.NAME -> {
-                            val sortedFiles = files!!.sortedBy { it.name }
-                            if (!isAscending) sortedFiles.reversed()
+                            var sortedFiles = files!!.sortedBy { it.name }
+                            if (!isAscending) sortedFiles = sortedFiles.reversed()
                             items(sortedFiles) { file ->
                                 FileItem(file, context, fileViewModel, isGridView)
                             }
                         }
                         SortType.DATE -> {
-                            val sortedFiles = files!!.sortedBy { it.lastModified() }
-                            if (!isAscending) sortedFiles.reversed()
+                            var sortedFiles = files!!.sortedBy { it.lastModified() }
+                            if (!isAscending) sortedFiles = sortedFiles.reversed()
                             items(sortedFiles) { file ->
                                 FileItem(file, context, fileViewModel, isGridView)
                             }
                         }
                         SortType.SIZE -> {
-                            val sortedFiles = files!!.sortedBy { it.length() }
-                            if (!isAscending) sortedFiles.reversed()
+                            var sortedFiles = files!!.sortedBy { it.length() }
+                            if (!isAscending) sortedFiles = sortedFiles.reversed()
                             items(sortedFiles) { file ->
                                 FileItem(file, context, fileViewModel, isGridView)
                             }
                         }
                         SortType.TYPE -> {
-                            val sortedFiles = files!!.sortedBy { it.extension }
-                            if (!isAscending) sortedFiles.reversed()
+                            var sortedFiles = files!!.sortedBy { it.extension }
+                            if (!isAscending) sortedFiles = sortedFiles.reversed()
                             items(sortedFiles) { file ->
                                 FileItem(file, context, fileViewModel, isGridView)
                             }
@@ -182,29 +183,29 @@ class ContentView(private val fileViewModel: FileViewModel) {
                 ) {
                     when (sortType) {
                         SortType.NAME -> {
-                            val sortedFiles = files!!.sortedBy { it.name }
-                            if (!isAscending) sortedFiles.reversed()
+                            var sortedFiles = files!!.sortedBy { it.name }
+                            if (!isAscending) sortedFiles = sortedFiles.reversed()
                             items(sortedFiles) { file ->
                                 FileItem(file, context, fileViewModel, isGridView)
                             }
                         }
                         SortType.DATE -> {
-                            val sortedFiles = files!!.sortedBy { it.lastModified() }
-                            if (!isAscending) sortedFiles.reversed()
+                            var sortedFiles = files!!.sortedBy { it.lastModified() }
+                            if (!isAscending) sortedFiles = sortedFiles.reversed()
                             items(sortedFiles) { file ->
                                 FileItem(file, context, fileViewModel, isGridView)
                             }
                         }
                         SortType.SIZE -> {
-                            val sortedFiles = files!!.sortedBy { it.length() }
-                            if (!isAscending) sortedFiles.reversed()
+                            var sortedFiles = files!!.sortedBy { it.length() }
+                            if (!isAscending) sortedFiles = sortedFiles.reversed()
                             items(sortedFiles) { file ->
                                 FileItem(file, context, fileViewModel, isGridView)
                             }
                         }
                         SortType.TYPE -> {
-                            val sortedFiles = files!!.sortedBy { it.extension }
-                            if (!isAscending) sortedFiles.reversed()
+                            var sortedFiles = files!!.sortedBy { it.extension }
+                            if (!isAscending) sortedFiles = sortedFiles.reversed()
                             items(sortedFiles) { file ->
                                 FileItem(file, context, fileViewModel, isGridView)
                             }
@@ -279,6 +280,5 @@ class ContentView(private val fileViewModel: FileViewModel) {
                 )
             }
         )
-        Divider()
     }
 }

@@ -3,11 +3,14 @@ package com.example.materialfilejetpackcompose.ViewModel
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import java.io.File
 import java.util.Stack
+import java.nio.file.Files
+import java.nio.file.Paths
 
 enum class SortType {
     NAME, SIZE, DATE, TYPE
@@ -15,8 +18,10 @@ enum class SortType {
 
 class FileViewModel(private val appContext: Context) : ViewModel() {
 
-    var files: LiveData<List<File>?> = MutableLiveData()
-    val currentDirectory: LiveData<File> = MutableLiveData()
+    private val _files: MutableLiveData<List<File>?> = MutableLiveData()
+    val files: LiveData<List<File>?> = _files
+    private val _currentDirectory: MutableLiveData<File> = MutableLiveData()
+    val currentDirectory: LiveData<File> = _currentDirectory
     val directoryStack = Stack<File>()
     private val _currentPath: MutableLiveData<String> = MutableLiveData("/")
     val currentPath: LiveData<String> = _currentPath
@@ -107,10 +112,16 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
         (currentDirectory as MutableLiveData).postValue(directory)
     }
 
+    private val _searchResults: MutableLiveData<List<File>> = MutableLiveData()
+    val searchResults: LiveData<List<File>> = _searchResults
+
     fun searchFiles(query: String) {
-        val currentFiles = files.value ?: return
-        val filteredFiles = currentFiles.filterTo(mutableListOf()) { it.name.contains(query, ignoreCase = true) }
-        (files as MutableLiveData).value = filteredFiles
+        val currentDir = currentDirectory.value
+        val results = currentDir?.listFiles { dir, name ->
+            name.contains(query, ignoreCase = true)
+        }?.toList() ?: emptyList()
+
+        _searchResults.value = results
     }
 
     fun addSelectedFile(file: File) {
@@ -127,43 +138,63 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
 
     //region File Operations
 
+    private fun performFileOperation(operation: (Set<File>?) -> Unit, selectedFiles: Set<File>? = null) {
+        operation(selectedFiles)
+    }
+
     fun moveFilesToTrash(selectedFiles: Set<File>? = null) {
-        if (selectedFiles == null) return
-
-        filesInTrash.addAll(selectedFiles)
-        filesInTrash = filesInTrash.distinct().toMutableList()
-        filesInTrash.sortBy { it.name }
-
-        files.value?.toMutableSet()?.removeAll(selectedFiles)
+        performFileOperation({ files ->
+            files?.let {
+                filesInTrash.addAll(it)
+                _files.value = _files.value?.minus(it)
+            }
+            updateFilesInTrash()
+        }, selectedFiles)
     }
 
     fun moveFilesOutOfTrash(selectedFiles: Set<File>? = null) {
-        if (selectedFiles == null) return
-
-        filesInTrash.removeAll(selectedFiles)
-        filesInTrash = filesInTrash.distinct().toMutableList()
-        filesInTrash.sortBy { it.name }
+        performFileOperation({ files ->
+            files?.let {
+                filesInTrash.removeAll(it)
+            }
+            updateFilesInTrash()
+        }, selectedFiles)
     }
 
     fun deleteFiles() {
-        val mutableSelectedFiles = selectedFiles.value?.toMutableSet()
-        val mutableFiles = files.value?.toMutableSet()
+        selectedFiles.value?.let { selectedFiles ->
+            if (selectedFiles.isEmpty()) return
 
-        if (mutableSelectedFiles!!.isEmpty()) return
-
-        mutableFiles?.removeAll(mutableSelectedFiles)
-        mutableSelectedFiles.forEach { it.delete() }
-
-        (files as MutableLiveData).value = mutableFiles?.toMutableList()
-        selectedFiles.value = mutableSelectedFiles
+            _files.value = _files.value?.minus(selectedFiles)
+            selectedFiles.forEach { file ->
+                try {
+                    Files.delete(Paths.get(file.absolutePath))
+                } catch (e: Exception) {
+                    println("Failed to delete file: ${file.absolutePath}")
+                    println("Reason: ${e.message}")
+                    Toast.makeText(appContext, "Failed to delete file: ${file.name}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
     }
 
-    fun copyFiles(selectedFiles: Set<File>? = null) {
-        if (selectedFiles == null) return
+    private fun updateFilesInTrash() {
+        filesInTrash = filesInTrash.distinct().sortedBy { it.name }.toMutableList()
+    }
 
+    fun createFiles(directory: File, fileNames: List<String>) {
+        fileNames.forEach { fileName ->
+            val newFile = File(directory, fileName)
+            val result = newFile.createNewFile()
+            if (!result) {
+                Toast.makeText(appContext, "Failed to create file", Toast.LENGTH_SHORT).show()
+            }
+        }
+        loadInternalStorage(directory)
+    }
+
+    fun copyFiles(selectedFiles: Set<File>) {
         filesToCopy.addAll(selectedFiles)
-        filesToCopy = filesToCopy.distinct().toMutableList()
-        filesToCopy.sortBy { it.name }
     }
 
     fun pasteFiles(destinationDirectory: File) {
@@ -171,6 +202,19 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
             file.copyTo(File(destinationDirectory, file.name))
         }
         filesToCopy.clear()
+    }
+
+    fun renameFile(oldFile: File, newName: String) {
+        val newFile = File(oldFile.parent, newName)
+        val renamed = oldFile.renameTo(newFile)
+        if (renamed) {
+            val mutableFiles = files.value?.toMutableList()
+            mutableFiles?.remove(oldFile)
+            mutableFiles?.add(newFile)
+            (files as MutableLiveData).value = mutableFiles
+        } else {
+            Toast.makeText(appContext, "Failed to rename file: ${oldFile.name}", Toast.LENGTH_SHORT).show()
+        }
     }
 
     //endregion File Operations

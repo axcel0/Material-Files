@@ -20,27 +20,34 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
 
     private val _files: MutableLiveData<List<File>?> = MutableLiveData()
     val files: LiveData<List<File>?> = _files
+
     private val _currentDirectory: MutableLiveData<File> = MutableLiveData()
     val currentDirectory: LiveData<File> = _currentDirectory
-    val directoryStack = Stack<File>()
+
+    private val directoryStack = Stack<File>()
+
     private val _currentPath: MutableLiveData<String> = MutableLiveData("/")
     val currentPath: LiveData<String> = _currentPath
+
     var selectedFiles: MutableLiveData<Set<File>?> = MutableLiveData<Set<File>?>(emptySet())
-    var filesInTrash = mutableListOf<File>()
-    var filesToCopy = mutableListOf<File>()
+
+    private var filesInTrash = mutableListOf<File>()
+    private var filesToCopy = mutableListOf<File>()
+
+    private var searchHistories = mutableListOf<String>()
 
     fun loadInternalStorage(directory: File? = null) {
-        val path = directory?.absolutePath
+        if (directory == null) return;
+
+        val path = directory.absolutePath
         directoryStack.push(directory)
         _currentPath.value = directoryStack.joinToString(separator = "/") { it.name }
-        if (path != null) {
-            if (path.contains("/Android/data") || path.contains("/Android/obb")) {
-                return
-            }
+
+        if (path.contains("/Android/data") || path.contains("/Android/obb")) {
+            return
         }
-        if (directory != null) {
-            (files as MutableLiveData).value = directory.listFiles()?.toList()
-        }
+
+        (files as MutableLiveData).value = directory.listFiles()?.toList()
         (currentDirectory as MutableLiveData).value = directory
     }
 
@@ -112,6 +119,8 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
         (currentDirectory as MutableLiveData).postValue(directory)
     }
 
+    //region Search
+
     private val _searchResults: MutableLiveData<List<File>> = MutableLiveData()
     val searchResults: LiveData<List<File>> = _searchResults
 
@@ -123,6 +132,17 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
 
         _searchResults.value = results
     }
+
+    fun searchAllFiles(query: String) {
+
+        val results = currentDirectory.value?.walk()?.filter { file ->
+            file.name.contains(query, ignoreCase = true)
+        }?.toList() ?: emptyList()
+
+        _searchResults.value = results
+    }
+
+    //endregion Search
 
     fun addSelectedFile(file: File) {
         val mutableSelectedFiles = selectedFiles.value?.toMutableSet()
@@ -182,15 +202,14 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
         filesInTrash = filesInTrash.distinct().sortedBy { it.name }.toMutableList()
     }
 
-    fun createFiles(directory: File, fileNames: List<String>) {
-        fileNames.forEach { fileName ->
-            val newFile = File(directory, fileName)
-            val result = newFile.createNewFile()
-            if (!result) {
-                Toast.makeText(appContext, "Failed to create file", Toast.LENGTH_SHORT).show()
-            }
+    fun createNewFolder(directory: File, folderName: String) {
+        val newFolder = File(currentDirectory.value, folderName)
+        if (newFolder.exists()) {
+            Toast.makeText(appContext, "Folder already exists: $folderName", Toast.LENGTH_SHORT).show()
+        } else {
+            newFolder.mkdir()
+            loadInternalStorage(currentDirectory.value)
         }
-        loadInternalStorage(directory)
     }
 
     fun copyFiles(selectedFiles: Set<File>) {

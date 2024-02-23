@@ -52,8 +52,11 @@ class SearchPageView(private val navController: NavController, private val fileV
             Surface {
                 TopAppBar(
                     modifier = Modifier.fillMaxWidth(),
-                    title = {
-                    },
+                    colors = topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background,
+                        titleContentColor = MaterialTheme.colorScheme.secondary,
+                    ),
+                    title = {},
                     actions = {
                         Row (
                             modifier = Modifier.fillMaxWidth(),
@@ -65,35 +68,26 @@ class SearchPageView(private val navController: NavController, private val fileV
                         }
                     },
                 )
+
+                // TODO: Search filter
+
             }
+
             SearchResults()
         }
     }
 
-
     @Composable
-    fun SearchResults() {
-        val searchResults by fileViewModel.searchResults.observeAsState(emptyList())
-
-        LazyColumn {
-            items(searchResults) { file ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp)
-                        .clickable { fileViewModel.loadInternalStorage(file) },
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Folder,
-                        contentDescription = "Folder Icon",
-                        modifier = Modifier.size(24.dp),
-                        tint = Color(0xFFFFA400)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = file.name)
-                }
-            }
+    fun BackButton() {
+        IconButton(
+            onClick = {
+                navController.navigate("home")
+            },
+        ) {
+            Icon(
+                imageVector = Icons.Default.ArrowBackIosNew,
+                contentDescription = "Back"
+            )
         }
     }
 
@@ -108,10 +102,6 @@ class SearchPageView(private val navController: NavController, private val fileV
                 searchQuery = query
                 if (query.isNotEmpty()) {
                     fileViewModel.searchFiles(query)
-                } else {
-                    fileViewModel.currentDirectory.value?.let {
-                        fileViewModel.loadInternalStorage(it)
-                    }
                 }
             },
             placeholder = { Text("Search..") },
@@ -144,20 +134,6 @@ class SearchPageView(private val navController: NavController, private val fileV
     }
 
     @Composable
-    fun BackButton() {
-        IconButton(
-            onClick = {
-                navController.navigate("home")
-            },
-        ) {
-            Icon(
-                imageVector = Icons.Default.ArrowBackIosNew,
-                contentDescription = "Back"
-            )
-        }
-    }
-
-    @Composable
     fun MenuButton() {
         var isMenuVisible by remember { mutableStateOf(false) }
         Box {
@@ -186,4 +162,32 @@ class SearchPageView(private val navController: NavController, private val fileV
         }
     }
 
+    fun SearchHistory() {
+
+    }
+
+    @Composable
+    fun SearchResults() {
+        val searchResults by fileViewModel.searchResults.observeAsState(emptyList())
+
+        LazyColumn {
+            items(searchResults) { file ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Folder,
+                        contentDescription = "Folder Icon",
+                        modifier = Modifier.size(24.dp),
+                        tint = Color(0xFFFFA400)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = file.name)
+                }
+            }
+        }
+    }
 }

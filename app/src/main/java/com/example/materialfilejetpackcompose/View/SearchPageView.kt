@@ -1,6 +1,8 @@
 package com.example.materialfilejetpackcompose.View
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -35,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -45,26 +48,28 @@ import com.example.materialfilejetpackcompose.ViewModel.FileViewModel
 class SearchPageView(private val navController: NavController, private val fileViewModel: FileViewModel) {
     @Composable
     fun SearchPage() {
-        Surface {
-            TopAppBar(
-                modifier = Modifier.fillMaxWidth(),
-                title = {
-                },
-                actions = {
-                    Row (
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        BackButton()
-                        SearchInput()
-                        MenuButton()
-                    }
-                },
-//                colors = topAppBarColors(containerColor = MaterialTheme.colorScheme.onPrimary)
-            )
+        Column {
+            Surface {
+                TopAppBar(
+                    modifier = Modifier.fillMaxWidth(),
+                    title = {
+                    },
+                    actions = {
+                        Row (
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            BackButton()
+                            SearchInput()
+                            MenuButton()
+                        }
+                    },
+                )
+            }
             SearchResults()
         }
     }
+
 
     @Composable
     fun SearchResults() {
@@ -75,32 +80,20 @@ class SearchPageView(private val navController: NavController, private val fileV
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(8.dp),
+                        .padding(8.dp)
+                        .clickable { fileViewModel.loadInternalStorage(file) },
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         imageVector = Icons.Default.Folder,
                         contentDescription = "Folder Icon",
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(24.dp),
+                        tint = Color(0xFFFFA400)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(text = file.name)
                 }
             }
-        }
-    }
-
-    @Composable
-    fun BackButton() {
-        IconButton(
-            onClick = {
-                navController.navigate("home")
-            },
-        ) {
-            Icon(
-                imageVector = Icons.Default.ArrowBackIosNew,
-                contentDescription = "Back"
-            )
         }
     }
 
@@ -148,6 +141,20 @@ class SearchPageView(private val navController: NavController, private val fileV
                     }
                 }
         )
+    }
+
+    @Composable
+    fun BackButton() {
+        IconButton(
+            onClick = {
+                navController.navigate("home")
+            },
+        ) {
+            Icon(
+                imageVector = Icons.Default.ArrowBackIosNew,
+                contentDescription = "Back"
+            )
+        }
     }
 
     @Composable

@@ -22,6 +22,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarColors
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -32,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
@@ -50,12 +53,11 @@ fun HomePage(navController: NavHostController, fileViewModel: FileViewModel) {
 
     Surface {
         val focusManager = LocalFocusManager.current
-
         Column(
             Modifier
                 .fillMaxHeight()
                 .width(widthAnim)
-                .background(MaterialTheme.colorScheme.primary)
+                .background(MaterialTheme.colorScheme.secondaryContainer)
                 .padding(horizontal = 10.dp, vertical = 10.dp)
                 .onFocusChanged { focusState ->
                     isExpanded = focusState.isFocused
@@ -106,6 +108,10 @@ fun HomePage(navController: NavHostController, fileViewModel: FileViewModel) {
             modifier = Modifier
                 .padding(start = widthAnim)
                 .fillMaxWidth(),
+            colors = topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                titleContentColor = MaterialTheme.colorScheme.primary,
+            ),
             title = {
                 if (isSearchBarVisible) {
                     OutlinedTextField(
@@ -141,7 +147,7 @@ fun HomePage(navController: NavHostController, fileViewModel: FileViewModel) {
                         }
                     )
                 } else {
-                    Text("Material Files", style = MaterialTheme.typography.bodyMedium)
+                    Text("Material Files", style = MaterialTheme.typography.titleMedium)
                 }
             },
             actions = {
@@ -151,6 +157,7 @@ fun HomePage(navController: NavHostController, fileViewModel: FileViewModel) {
                     Icon(Icons.Default.Search, contentDescription = "Search")
                 }
             },
+
         )
 
         Column(
@@ -234,10 +241,13 @@ fun DrawerItem(icon: ImageVector, title: String, expanded: Boolean, onClick: () 
             enter = fadeIn(),
             exit = fadeOut() + shrinkOut()
         ) {
-            Row(modifier = Modifier.fillMaxWidth()) {
-                Spacer(modifier = Modifier.width(10.dp))
-                Text(text = title, color = MaterialTheme.colorScheme.onPrimary)
-            }
+            Text(
+                text = title,
+                color = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier
+                    .padding(start = 10.dp)
+                    .weight(1f)
+            )
         }
     }
 }

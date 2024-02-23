@@ -1,6 +1,5 @@
 package com.example.materialfilejetpackcompose.View
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,8 +12,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.DropdownMenuItem
-import androidx.compose.material.Surface
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Surface
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Folder
@@ -153,11 +152,12 @@ class SearchPageView(private val navController: NavController, private val fileV
                 expanded = isMenuVisible,
                 onDismissRequest = { isMenuVisible = false }
             ) {
-                DropdownMenuItem(onClick = {
-                    //TODO: Implement Search History Settings
-                }){
-                    Text("Search Settings")
-                }
+                DropdownMenuItem(
+                    onClick = {
+//                        isMenuVisible = false
+                    },
+                    text = { Text("Search History") }
+                )
             }
         }
     }

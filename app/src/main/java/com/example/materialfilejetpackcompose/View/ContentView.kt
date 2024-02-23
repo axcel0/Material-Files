@@ -1,9 +1,6 @@
 package com.example.materialfilejetpackcompose.View
 
 import android.content.Context
-import android.content.Intent
-import android.net.Uri
-import android.os.Environment
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -33,7 +30,6 @@ import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.ViewModule
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue

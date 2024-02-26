@@ -122,7 +122,7 @@ class SearchPageView(private val navController: NavController, private val fileV
                         //move cursor to left when focus is lost
                         searchQuery = ""
                         fileViewModel.currentDirectory.value?.let {
-                            fileViewModel.loadInternalStorage(it)
+                            fileViewModel.loadStorage(it)
                         }
                     } else if (focusState.isFocused) {
                         //move cursor to right when focus is gained

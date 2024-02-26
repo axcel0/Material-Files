@@ -75,6 +75,7 @@ dependencies {
     //material icons
     implementation("androidx.compose.material:material-icons-core:1.6.2")
     implementation("androidx.compose.material:material-icons-extended:1.6.2")
+    implementation("io.coil-kt:coil-compose:2.6.0")
     implementation("com.google.accompanist:accompanist-permissions:0.33.2-alpha")
     implementation("com.google.accompanist:accompanist-systemuicontroller:0.33.2-alpha")
 }

@@ -65,7 +65,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
 //        val isRunningOnTV = packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
-        fileViewModel.loadInternalStorage(Environment.getExternalStorageDirectory())
+        fileViewModel.loadStorage(Environment.getExternalStorageDirectory())
 
         fileViewModel.currentPath.observe(this) {
             title = it
@@ -94,7 +94,7 @@ class MainActivity : ComponentActivity() {
                 if (!parentFileExists) {
                     isExitDialogShown = !isExitDialogShown
                 } else {
-                    fileViewModel.loadInternalStorage(currentDirectory!!.parentFile)
+                    fileViewModel.loadStorage(currentDirectory!!.parentFile)
                 }
             }
 

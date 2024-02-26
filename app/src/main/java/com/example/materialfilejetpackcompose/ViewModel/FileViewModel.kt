@@ -2,7 +2,13 @@ package com.example.materialfilejetpackcompose.ViewModel
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.media.ThumbnailUtils
 import android.net.Uri
+import android.os.Build
+import android.provider.MediaStore
+import android.util.Log
+import android.util.Size
 import android.widget.Toast
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -11,6 +17,7 @@ import java.io.File
 import java.util.Stack
 import java.nio.file.Files
 import java.nio.file.Paths
+import java.util.Locale
 
 enum class SortType {
     NAME, SIZE, DATE, TYPE
@@ -36,19 +43,20 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
 
     private var searchHistories = mutableListOf<String>()
 
-    fun loadInternalStorage(directory: File? = null) {
-        if (directory == null) return;
-
-        val path = directory.absolutePath
+    fun loadStorage(directory: File? = null) {
+        val path = directory?.absolutePath
         directoryStack.push(directory)
-        _currentPath.value = directoryStack.joinToString(separator = "/") { it.name }
-
-        if (path.contains("/Android/data") || path.contains("/Android/obb")) {
-            return
+        _currentPath.postValue(directoryStack.joinToString(separator = "/") { it.name })
+        if (path != null) {
+            if (path.contains("/Android/data") || path.contains("/Android/obb")) {
+                return
+            }
         }
-
-        (files as MutableLiveData).value = directory.listFiles()?.toList()
-        (currentDirectory as MutableLiveData).value = directory
+        if (directory != null) {
+            val filteredFiles = directory.listFiles()?.toList()
+            (files as MutableLiveData).postValue(filteredFiles)
+        }
+        (currentDirectory as MutableLiveData).postValue(directory)
     }
 
     //region Photos
@@ -60,12 +68,18 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
 
     fun isFilePhoto(file: File): Boolean {
         val photoExtensions = listOf("jpg", "png", "jpeg", "gif")
-        return file.extension in photoExtensions
+        return photoExtensions.contains(file.extension.lowercase(Locale.ROOT))
     }
 
-    fun openPhotoFile(file: File) {
+    fun openMediaFile(file: File) {
         val intent = Intent(Intent.ACTION_VIEW)
-        intent.setDataAndType(Uri.parse(file.absolutePath), "image/*")
+        val mimeType: String = when {
+            isFilePhoto(file) -> "image/*"
+            isFileVideo(file) -> "video/*"
+            isFileAudio(file) -> "audio/*"
+            else -> "*/*"
+        }
+        intent.setDataAndType(Uri.parse(file.absolutePath), mimeType)
         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
         appContext.startActivity(intent)
     }
@@ -76,10 +90,19 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
         val videoExtensions = listOf("mp4", "avi", "flv", "mov")
         loadAllFilesWithExtensions(directory, videoExtensions)
     }
+    fun isFileVideo(file: File): Boolean {
+        val videoExtensions = listOf("mp4", "avi", "flv", "mov")
+        return videoExtensions.contains(file.extension.lowercase(Locale.ROOT))
+    }
 
     fun loadAudiosOnly(directory: File? = null) {
         val audioExtensions = listOf("mp3", "wav", "ogg", "flac")
         loadAllFilesWithExtensions(directory, audioExtensions)
+    }
+
+    fun isFileAudio(file: File): Boolean {
+        val audioExtensions = listOf("mp3", "wav", "aac", "flac")
+        return audioExtensions.contains(file.extension.lowercase(Locale.ROOT))
     }
 
     private fun loadFilesWithExtensions(directory: File? = null, extensions: List<String>) {
@@ -203,12 +226,14 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
     }
 
     fun createNewFolder(directory: File, folderName: String) {
-        val newFolder = File(currentDirectory.value, folderName)
+        val newFolder = File(directory, folderName)
         if (newFolder.exists()) {
-            Toast.makeText(appContext, "Folder already exists: $folderName", Toast.LENGTH_SHORT).show()
+            Toast.makeText(appContext, "Folder already exists", Toast.LENGTH_SHORT).show()
         } else {
             newFolder.mkdir()
-            loadInternalStorage(currentDirectory.value)
+            val mutableFiles = files.value?.toMutableList()
+            mutableFiles?.add(newFolder)
+            (files as MutableLiveData).value = mutableFiles
         }
     }
 
@@ -235,6 +260,14 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
             Toast.makeText(appContext, "Failed to rename file: ${oldFile.name}", Toast.LENGTH_SHORT).show()
         }
     }
+
+    fun restoreFiles() {
+        filesInTrash.forEach { file ->
+            file.copyTo(File(currentDirectory.value, file.name))
+        }
+        filesInTrash.clear()
+    }
+
 
     //endregion File Operations
 }

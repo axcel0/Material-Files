@@ -1,6 +1,7 @@
 package com.example.materialfilejetpackcompose.View
 
 import android.content.Context
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -27,6 +28,8 @@ import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.VideoFile
 import androidx.compose.material.icons.filled.ViewModule
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
@@ -42,9 +45,13 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role.Companion.Image
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.rememberAsyncImagePainter
+import coil.compose.rememberImagePainter
+import coil.request.ImageRequest
 import com.example.materialfilejetpackcompose.ViewModel.FileViewModel
 import com.example.materialfilejetpackcompose.ViewModel.SortType
 import java.io.File
@@ -172,32 +179,59 @@ class ContentView(private val fileViewModel: FileViewModel) {
                     fontWeight = FontWeight.Bold
                 )
             },
-            leadingContent = {
-                if (file.isDirectory) {
-                    if (isGridView) {
-                        Icon(imageVector = Icons.Filled.Folder, contentDescription = "Folder", modifier = Modifier.size(56.dp), tint = Color(0xFFFFA400))
-                    } else {
-                        Icon(imageVector = Icons.Filled.Folder, contentDescription = "Folder", tint = Color(0xFFFFA400))
+            leadingContent =  {
+                when {
+                    file.isDirectory -> {
+                        Icon(
+                            imageVector = Icons.Filled.Folder,
+                            contentDescription = "Folder",
+                            modifier = if (isGridView) Modifier.size(56.dp) else Modifier.size(24.dp),
+                            tint = Color(0xFFFFA400)
+                        )
                     }
-                } else {
-                    if (isGridView) {
-                        Icon(imageVector = Icons.AutoMirrored.Filled.InsertDriveFile, contentDescription = "File", modifier = Modifier.size(72.dp), tint = Color(0xFF757575))
-                    } else {
-                        Icon(imageVector = Icons.AutoMirrored.Filled.InsertDriveFile, contentDescription = "File", tint = Color(0xFF757575))
+                    fileViewModel.isFilePhoto(file) -> {
+                        Image(
+                            painter = rememberAsyncImagePainter(
+                                model = ImageRequest.Builder(context)
+                                    .data(file)
+                                    .build()
+                            ),
+                            contentDescription = "Photo",
+                            modifier = if (isGridView) Modifier.size(72.dp) else Modifier.size(24.dp)
+                        )
+                    }
+                    fileViewModel.isFileAudio(file) -> {
+                        Icon(
+                            imageVector = Icons.Default.MusicNote,
+                            contentDescription = "Audio",
+                            modifier = if (isGridView) Modifier.size(72.dp) else Modifier.size(24.dp),
+                            tint = Color(0xFF757575)
+                        )
+                    }
+                    fileViewModel.isFileVideo(file) -> {
+                        Icon(
+                            imageVector = Icons.Default.VideoFile,
+                            contentDescription = "Video",
+                            modifier = if (isGridView) Modifier.size(72.dp) else Modifier.size(24.dp),
+                            tint = Color(0xFF757575)
+                        )
+                    }
+                    else -> {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.InsertDriveFile,
+                            contentDescription = "File",
+                            modifier = if (isGridView) Modifier.size(72.dp) else Modifier,
+                            tint = Color(0xFF757575)
+                        )
                     }
                 }
             },
             modifier = Modifier
                 .clickable {
                     if (file.isDirectory) {
-                        fileViewModel.loadInternalStorage(file)
-                    } else if (fileViewModel.isFilePhoto(file)) {
-                        fileViewModel.openPhotoFile(file)
-                    } else {
-                        // TODO: untuk axel
-//                        val intent = Intent(Intent.ACTION_VIEW)
-//                        intent.data = Uri.fromFile(file)
-//                        context.startActivity(intent)
+                        fileViewModel.loadStorage(file)
+                    } else if (fileViewModel.isFilePhoto(file) || fileViewModel.isFileAudio(file) || fileViewModel.isFileVideo(file)) {
+                        fileViewModel.openMediaFile(file)
                     }
                 }
                 .background(

@@ -83,7 +83,7 @@ class HomePageView(private val navController: NavHostController, private val fil
                 Column {
                     DrawerItem(Icons.Default.Folder, "All Files", isExpanded) {
                         fileViewModel.currentDirectory.value?.let {
-                            fileViewModel.loadInternalStorage(it)
+                            fileViewModel.loadStorage(it)
                         }
                     }
                     DrawerItem(Icons.Default.Photo, "Photos", isExpanded) {

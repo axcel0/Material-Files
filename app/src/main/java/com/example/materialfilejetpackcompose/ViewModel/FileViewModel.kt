@@ -173,9 +173,14 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
         selectedFiles.value = mutableSelectedFiles
     }
 
-    fun removeSelectedFile(file: File) {
+    fun updateSelectedFiles(file: File? = null, removeAll: Boolean = false) {
         val mutableSelectedFiles = selectedFiles.value?.toMutableSet()
-        mutableSelectedFiles?.remove(file)
+        if (removeAll) {
+            mutableSelectedFiles?.clear()
+            mutableSelectedFiles?.remove(file)
+        } else {
+            file?.let { mutableSelectedFiles?.remove(it) }
+        }
         selectedFiles.value = mutableSelectedFiles
     }
 

@@ -251,7 +251,7 @@ class ContentView(private val fileViewModel: FileViewModel) {
                         if (it) {
                             fileViewModel.addSelectedFile(file)
                         } else {
-                            fileViewModel.removeSelectedFile(file)
+                            fileViewModel.updateSelectedFiles(file, true)
                         }
                     }
                 )

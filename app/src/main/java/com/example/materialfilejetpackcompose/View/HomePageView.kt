@@ -172,6 +172,7 @@ class HomePageView(private val navController: NavHostController, private val fil
                             IconButton(
                                 onClick = {
                                     fileViewModel.deleteFiles()
+                                    fileViewModel.updateSelectedFiles()
                                 }
                             ) {
                                 Icon(

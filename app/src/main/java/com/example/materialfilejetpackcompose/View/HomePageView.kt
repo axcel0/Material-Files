@@ -26,6 +26,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -42,6 +43,7 @@ import androidx.navigation.NavHostController
 import com.example.materialfilejetpackcompose.ViewModel.FileViewModel
 
 class HomePageView(private val navController: NavHostController, private val fileViewModel: FileViewModel) {
+
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun HomePage() {
@@ -168,42 +170,37 @@ class HomePageView(private val navController: NavHostController, private val fil
                             .padding(16.dp),
                         horizontalArrangement = Arrangement.Center
                     ) {
-                        Column {
-                            IconButton(
-                                onClick = {
-                                    fileViewModel.deleteFiles()
-                                    fileViewModel.updateSelectedFiles()
-                                }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Delete,
-                                    contentDescription = "Delete"
-                                )
+                        val actions = listOf(
+                            Pair(Icons.Default.Delete, "Delete") to {
+                                fileViewModel.deleteFiles()
+                                fileViewModel.updateSelectedFiles()
+                            },
+                            Pair(Icons.Default.CopyAll, "Copy") to {
+                                fileViewModel.copyFiles(selectedFiles.value!!)
                             }
-                            Text(text = "Delete")
-                        }
-                        Column {
-                            IconButton(
-                                onClick = {
-                                    fileViewModel.copyFiles(selectedFiles.value!!)
-                                }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.CopyAll,
-                                    contentDescription = "Copy"
-                                )
-                            }
-                            Text(text = "Copy")
+                        )
+
+                        actions.forEach { (iconData, action) ->
+                            ActionButton(imageVector = iconData.first, text = iconData.second, onClick = action)
                         }
                     }
                 }
             }
 
-            if (shouldShowNewFolderDialog) {
-                NewFolderDialog {
-                    shouldShowNewFolderDialog = false
-                }
+//            if (shouldShowNewFolderDialog) {
+//                NewFolderDialog(shouldShowNewFolderDialog) {
+//                    shouldShowNewFolderDialog = false
+//                }
+//            }
+        }
+    }
+    @Composable
+    fun ActionButton(imageVector: ImageVector, text: String, onClick: () -> Unit) {
+        Column {
+            IconButton(onClick = onClick) {
+                Icon(imageVector = imageVector, contentDescription = text)
             }
+            Text(text = text)
         }
     }
 
@@ -239,12 +236,12 @@ class HomePageView(private val navController: NavHostController, private val fil
     }
 
     @Composable
-    fun NewFolderDialog(onCancel: () -> Unit = {}) {
+    fun NewFolderDialog(shouldShowNewFolderDialog: MutableState<Boolean>, onCancel: () -> Unit = {}) {
         var folderName by remember { mutableStateOf("") }
         val focusManager = LocalFocusManager.current
 
         Dialog(
-            onDismissRequest = {},
+            onDismissRequest = { shouldShowNewFolderDialog.value = false },
         ) {
             Column(
                 modifier = Modifier
@@ -264,7 +261,8 @@ class HomePageView(private val navController: NavHostController, private val fil
                             focusManager.clearFocus()
                             val currentDir = fileViewModel.currentDirectory.value
                             if (currentDir != null) {
-                                fileViewModel.createNewFolder(currentDir, folderName)
+                                fileViewModel.createNewFolder(currentDir.absolutePath, folderName)
+                                shouldShowNewFolderDialog.value = false
                             }
                         }
                     ),
@@ -275,7 +273,10 @@ class HomePageView(private val navController: NavHostController, private val fil
 
                 Row {
                     Button(
-                        onClick = onCancel,
+                        onClick = {
+                            shouldShowNewFolderDialog.value = false
+                            onCancel()
+                        },
                         modifier = Modifier
                             .padding(16.dp)
                             .weight(1f)
@@ -286,8 +287,8 @@ class HomePageView(private val navController: NavHostController, private val fil
                         onClick = {
                             val currentDir = fileViewModel.currentDirectory.value
                             if (currentDir != null) {
-                                fileViewModel.createNewFolder(currentDir, folderName)
-                                onCancel()
+                                fileViewModel.createNewFolder(currentDir.absolutePath, folderName)
+                                shouldShowNewFolderDialog.value = false
                             }
                         },
                         modifier = Modifier

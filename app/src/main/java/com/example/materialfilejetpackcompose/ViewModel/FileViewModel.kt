@@ -2,21 +2,17 @@ package com.example.materialfilejetpackcompose.ViewModel
 
 import android.content.Context
 import android.content.Intent
-import android.graphics.Bitmap
-import android.media.ThumbnailUtils
 import android.net.Uri
-import android.os.Build
-import android.provider.MediaStore
-import android.util.Log
-import android.util.Size
 import android.widget.Toast
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import java.io.File
+import java.io.IOException
 import java.util.Stack
 import java.nio.file.Files
 import java.nio.file.Paths
+import java.nio.file.Path
 import java.util.Locale
 
 enum class SortType {
@@ -230,15 +226,19 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
         filesInTrash = filesInTrash.distinct().sortedBy { it.name }.toMutableList()
     }
 
-    fun createNewFolder(directory: File, folderName: String) {
-        val newFolder = File(directory, folderName)
-        if (newFolder.exists()) {
+    fun createNewFolder(directory: String, folderName: String) {
+        val newFolder = Paths.get(directory, folderName)
+        if (Files.exists(newFolder)) {
             Toast.makeText(appContext, "Folder already exists", Toast.LENGTH_SHORT).show()
         } else {
-            newFolder.mkdir()
-            val mutableFiles = files.value?.toMutableList()
-            mutableFiles?.add(newFolder)
-            (files as MutableLiveData).value = mutableFiles
+            try {
+                Files.createDirectory(newFolder)
+                val mutableFiles = files.value?.toMutableList()
+                mutableFiles?.add(newFolder.toFile())
+                (files as MutableLiveData).value = mutableFiles
+            } catch (e: IOException) {
+                Toast.makeText(appContext, "Failed to create directory", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 

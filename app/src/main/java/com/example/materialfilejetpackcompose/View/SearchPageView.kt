@@ -1,5 +1,6 @@
 package com.example.materialfilejetpackcompose.View
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,6 +17,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Surface
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.DropdownMenu
@@ -45,6 +47,9 @@ import com.example.materialfilejetpackcompose.ViewModel.FileViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 class SearchPageView(private val navController: NavController, private val fileViewModel: FileViewModel) {
+
+    private var searchHistory = mutableListOf<String>()
+    private var searchQuery by mutableStateOf("")
     @Composable
     fun SearchPage() {
         Column {
@@ -71,8 +76,11 @@ class SearchPageView(private val navController: NavController, private val fileV
                 // TODO: Search filter
 
             }
-
-            SearchResults()
+            if (searchQuery.isEmpty()) {
+                SearchHistory()
+            } else {
+                SearchResults()
+            }
         }
     }
 
@@ -99,9 +107,6 @@ class SearchPageView(private val navController: NavController, private val fileV
             value = searchQuery,
             onValueChange = { query ->
                 searchQuery = query
-                if (query.isNotEmpty()) {
-                    fileViewModel.searchFiles(query)
-                }
             },
             placeholder = { Text("Search..") },
             singleLine = true,
@@ -109,6 +114,12 @@ class SearchPageView(private val navController: NavController, private val fileV
             keyboardActions = KeyboardActions(
                 onSearch = {
                     focusManager.clearFocus()
+                    if (searchQuery.isNotEmpty()) {
+                        fileViewModel.searchFiles(searchQuery)
+                        if (!searchHistory.contains(searchQuery)) {
+                            searchHistory.add(searchQuery) // Add the query to the search history
+                        }
+                    }
                 },
                 onDone = {
                     focusManager.clearFocus()
@@ -117,18 +128,6 @@ class SearchPageView(private val navController: NavController, private val fileV
             modifier = Modifier
                 .fillMaxWidth(0.95f)
                 .size(55.dp)
-                .onFocusChanged { focusState ->
-                    if (!focusState.isFocused) {
-                        //move cursor to left when focus is lost
-                        searchQuery = ""
-                        fileViewModel.currentDirectory.value?.let {
-                            fileViewModel.loadStorage(it)
-                        }
-                    } else if (focusState.isFocused) {
-                        //move cursor to right when focus is gained
-                        searchQuery = ""
-                    }
-                }
         )
     }
 
@@ -162,8 +161,25 @@ class SearchPageView(private val navController: NavController, private val fileV
         }
     }
 
+    @Composable
     fun SearchHistory() {
+        val searchHistorySnapshot = searchHistory.toList() // Create a copy of the searchHistory
 
+        LazyColumn {
+            items(searchHistorySnapshot) { query ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(text = query, color = Color.Gray)
+                    IconButton(onClick = {
+                        searchHistory.remove(query) // Remove the query from the original searchHistory
+                    }) {
+                        Icon(imageVector = Icons.Default.Close, contentDescription = "Delete")
+                    }
+                }
+            }
+        }
     }
 
     @Composable

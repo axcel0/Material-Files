@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.NightsStay
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -71,14 +72,23 @@ class SettingsPageView(private val navController: NavController) {
                         checked = isDarkTheme,
                         onCheckedChange = onDarkModeChange,
                         colors = SwitchDefaults.colors(
-                            checkedThumbColor = Color.Red,
-                            uncheckedThumbColor = Color.Blue,
-                            checkedTrackColor = Color.Red.copy(alpha = 0.3f),
-                            uncheckedTrackColor = Color.Blue.copy(alpha = 0.3f)
+                            checkedThumbColor = Color.DarkGray,
+                            uncheckedThumbColor = Color.LightGray,
+                            checkedTrackColor = Color.DarkGray.copy(alpha = 0.3f),
+                            uncheckedTrackColor = Color.LightGray.copy(alpha = 0.3f)
                         )
                     )
                 }
                 HorizontalDivider()
+                //make text description for this whole app about material file manager build with jetpack compose
+                Text(text = "About")
+                Icon(
+                    imageVector = Icons.Filled.Info,
+                    contentDescription = "About",
+                    modifier = Modifier
+                        .padding(start = 24.dp, end = 8.dp)
+                )
+
             }
         }
     }

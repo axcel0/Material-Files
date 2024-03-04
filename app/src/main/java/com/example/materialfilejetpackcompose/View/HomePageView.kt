@@ -54,7 +54,6 @@ class HomePageView(private val navController: NavHostController, private val fil
         )
         val selectedFiles = fileViewModel.selectedFiles.observeAsState()
         var isDropdownMenuVisible by remember { mutableStateOf(false) }
-        var shouldShowNewFolderDialog by remember { mutableStateOf(false) }
 
         Surface {
             val focusManager = LocalFocusManager.current
@@ -138,7 +137,6 @@ class HomePageView(private val navController: NavHostController, private val fil
                                 text = { Text("New folder") },
                                 onClick = {
                                     isDropdownMenuVisible = false
-                                    shouldShowNewFolderDialog = true
                                 }
                             )
                         }
@@ -186,12 +184,6 @@ class HomePageView(private val navController: NavHostController, private val fil
                     }
                 }
             }
-
-//            if (shouldShowNewFolderDialog) {
-//                NewFolderDialog(shouldShowNewFolderDialog) {
-//                    shouldShowNewFolderDialog = false
-//                }
-//            }
         }
     }
     @Composable

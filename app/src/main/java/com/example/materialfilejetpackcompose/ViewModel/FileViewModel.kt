@@ -35,7 +35,9 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
     var selectedFiles: MutableLiveData<Set<File>?> = MutableLiveData<Set<File>?>(emptySet())
 
     private var filesInTrash = mutableListOf<File>()
-    private var filesToCopy = mutableListOf<File>()
+
+    var filesToCopy = MutableLiveData<Set<File>?>(emptySet())
+    var isCopying = false
 
     private var searchHistories = mutableListOf<String>()
 
@@ -53,6 +55,11 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
             (files as MutableLiveData).postValue(filteredFiles)
         }
         (currentDirectory as MutableLiveData).postValue(directory)
+        selectedFiles.value = emptySet()
+    }
+
+    fun getHomeDirectory(): File {
+        return File("/storage/emulated/0")
     }
 
     //region Photos
@@ -169,15 +176,14 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
         selectedFiles.value = mutableSelectedFiles
     }
 
-    fun updateSelectedFiles(file: File? = null, removeAll: Boolean = false) {
+    fun removeSelectedFile(file: File) {
         val mutableSelectedFiles = selectedFiles.value?.toMutableSet()
-        if (removeAll) {
-            mutableSelectedFiles?.clear()
-            mutableSelectedFiles?.remove(file)
-        } else {
-            file?.let { mutableSelectedFiles?.remove(it) }
-        }
+        mutableSelectedFiles?.remove(file)
         selectedFiles.value = mutableSelectedFiles
+    }
+
+    private fun clearSelectedFiles() {
+        selectedFiles.value = emptySet()
     }
 
     //region File Operations
@@ -205,14 +211,26 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
         }, selectedFiles)
     }
 
+    fun deleteFile(file: File) {
+        Files.deleteIfExists(Paths.get(file.absolutePath))
+        loadStorage(currentDirectory.value)
+    }
+
     fun deleteFiles() {
         selectedFiles.value?.let { selectedFiles ->
             if (selectedFiles.isEmpty()) return
 
             selectedFiles.forEach { file ->
                 try {
-                    Files.delete(Paths.get(file.absolutePath))
-                    _files.value = _files.value?.minus(selectedFiles)
+                    if (file.isDirectory) {
+                        Files.walk(Paths.get(file.absolutePath))
+                            .sorted(Comparator.reverseOrder())
+                            .map(Path::toFile)
+                            .forEach { it.delete() }
+                    } else {
+                        Files.delete(Paths.get(file.absolutePath))
+                    }
+
                 } catch (e: Exception) {
                     println("Failed to delete file: ${file.absolutePath}")
                     println("Reason: ${e.message}")
@@ -220,6 +238,8 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
                 }
             }
         }
+        loadStorage(currentDirectory.value)
+        clearSelectedFiles()
     }
 
     private fun updateFilesInTrash() {
@@ -242,28 +262,70 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
         }
     }
 
+    fun cutFiles(selectedFiles: Set<File>) {
+        filesToCopy.value = selectedFiles
+        isCopying = false
+    }
+
     fun copyFiles(selectedFiles: Set<File>) {
-        filesToCopy.addAll(selectedFiles)
+        filesToCopy.value = selectedFiles
+        isCopying = true
     }
 
     fun pasteFiles(destinationDirectory: File) {
-        filesToCopy.forEach { file ->
-            file.copyTo(File(destinationDirectory, file.name))
+        filesToCopy.value?.forEach { file ->
+            val isInSameDirectory = file.parent == destinationDirectory.absolutePath
+            if (!isCopying && isInSameDirectory)
+            {
+                return
+            }
+
+            var newFile = File(destinationDirectory, file.name)
+            var counter = 1
+            while (newFile.exists()) {
+                val fileName = file.nameWithoutExtension + "(${counter++})"
+                val extension = file.extension
+                newFile = if (extension.isNotEmpty()) {
+                    File(destinationDirectory, "$fileName.$extension")
+                } else {
+                    File(destinationDirectory, fileName)
+                }
+            }
+
+            if (file.isDirectory) {
+                newFile.mkdirs()
+                file.listFiles()?.forEach { childFile ->
+                    filesToCopy.value = setOf(childFile)
+                    pasteFiles(newFile)
+                }
+            } else {
+                file.copyTo(newFile)
+            }
+
+            if (!isCopying) {
+                deleteFile(file)
+            }
         }
-        filesToCopy.clear()
+
+        loadStorage(destinationDirectory)
+        filesToCopy.value = emptySet()
+        clearSelectedFiles()
     }
 
     fun renameFile(oldFile: File, newName: String) {
         val newFile = File(oldFile.parent, newName)
-        val renamed = oldFile.renameTo(newFile)
-        if (renamed) {
-            val mutableFiles = files.value?.toMutableList()
-            mutableFiles?.remove(oldFile)
-            mutableFiles?.add(newFile)
-            (files as MutableLiveData).value = mutableFiles
+        if (oldFile.renameTo(newFile)) {
+            loadStorage(currentDirectory.value)
         } else {
-            Toast.makeText(appContext, "Failed to rename file: ${oldFile.name}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(appContext, "Failed to rename file", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    fun getFileInfo(file: File): String {
+        val lastModified = file.lastModified()
+        val size = file.length()
+        val type = if (file.isDirectory) "Folder" else "File"
+        return "Type: $type\nSize: $size bytes\nLast Modified: $lastModified"
     }
 
     fun restoreFiles() {

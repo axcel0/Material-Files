@@ -26,7 +26,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -56,6 +55,10 @@ class HomePageView(private val navController: NavHostController, private val fil
         val selectedFiles = fileViewModel.selectedFiles.observeAsState()
         var isDropdownMenuVisible by remember { mutableStateOf(false) }
         var shouldShowNewFolderDialog by remember { mutableStateOf(false) }
+        var filesToCopy = fileViewModel.filesToCopy.observeAsState()
+        var ableToPaste by remember { mutableStateOf(false) }
+        var shouldShowFileInfo by remember { mutableStateOf(false) }
+        var fileInfo: String by remember { mutableStateOf("") }
 
         Surface {
             val focusManager = LocalFocusManager.current
@@ -85,9 +88,8 @@ class HomePageView(private val navController: NavHostController, private val fil
                 )
                 Column {
                     DrawerItem(Icons.Default.Folder, "All Files", isExpanded) {
-                        fileViewModel.currentDirectory.value?.let {
-                            fileViewModel.loadStorage(it)
-                        }
+                        val homeDir = fileViewModel.getHomeDirectory()
+                        fileViewModel.loadStorage(homeDir)
                     }
                     DrawerItem(Icons.Default.Photo, "Photos", isExpanded) {
                         fileViewModel.currentDirectory.value?.let {
@@ -154,7 +156,7 @@ class HomePageView(private val navController: NavHostController, private val fil
                 Column(
                     Modifier
                         .padding(start = widthAnim)
-                        .fillMaxHeight(if (selectedFiles.value!!.isEmpty()) 1f else 0.9f)
+                        .fillMaxHeight(if (selectedFiles.value!!.isEmpty() && filesToCopy.value!!.isEmpty()) 1f else 0.9f)
                 ) {
                     val contentView by lazy { ContentView(fileViewModel) }
                     contentView.Content()
@@ -174,22 +176,44 @@ class HomePageView(private val navController: NavHostController, private val fil
                         val actions = listOf(
                             Pair(Icons.Default.Delete, "Delete") to {
                                 fileViewModel.deleteFiles()
-                                fileViewModel.updateSelectedFiles()
                             },
-                            Pair(Icons.Default.CopyAll, "Copy") to {
-                                fileViewModel.copyFiles(selectedFiles.value!!)
+
+                            if (!ableToPaste) Pair(Icons.Default.ContentCut, "Cut") to {
+                                ableToPaste = true
+                                fileViewModel.cutFiles(selectedFiles.value!!)
+                            } else Pair(null, "") to {},
+
+                            if (ableToPaste) Pair(Icons.Default.ContentPaste, "Paste") to {
+                                ableToPaste = false
+                                fileViewModel.pasteFiles(fileViewModel.currentDirectory.value!!)
                             }
+                            else Pair(Icons.Default.CopyAll, "Copy") to {
+                                ableToPaste = true
+                                fileViewModel.copyFiles(selectedFiles.value!!)
+                            },
+
+                            /*if (selectedFiles.value!!.count() == 1) Pair(Icons.Default.Edit, "Rename") to {
+                            }
+                            else Pair(null, "") to {}*/
+
+                            if (selectedFiles.value!!.count() == 1) Pair(Icons.Default.Info, "Info") to {
+                                shouldShowFileInfo = true
+                                fileInfo = fileViewModel.getFileInfo(selectedFiles.value!!.first())
+                            } else Pair(null, "") to {}
                         )
 
                         actions.forEach { (iconData, action) ->
-                            ActionButton(imageVector = iconData.first, text = iconData.second, onClick = action)
+                            iconData.first?.let { ActionButton(imageVector = it, text = iconData.second, onClick = action) }
                         }
                     }
                 }
+
                 if (shouldShowNewFolderDialog) {
-                    NewFolderDialog {
-                        shouldShowNewFolderDialog = false
-                    }
+                    NewFolderDialog { shouldShowNewFolderDialog = false }
+                }
+
+                if (shouldShowFileInfo) {
+                    FileInfoDialog(fileInfo) { shouldShowFileInfo = false }
                 }
             }
         }
@@ -275,7 +299,6 @@ class HomePageView(private val navController: NavHostController, private val fil
                 Row {
                     Button(
                         onClick = onCancel,
-
                         modifier = Modifier
                             .padding(16.dp)
                             .weight(1f)
@@ -297,6 +320,24 @@ class HomePageView(private val navController: NavHostController, private val fil
                         Text("Create")
                     }
                 }
+            }
+        }
+    }
+
+    @Composable
+    fun FileInfoDialog(fileInfo: String, onCancel: () -> Unit) {
+        Dialog(
+            onDismissRequest = onCancel,
+            properties = DialogProperties(dismissOnBackPress = true, dismissOnClickOutside = true)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.background)
+                    .padding(16.dp)
+            ) {
+                Text(text = "File Info", style = MaterialTheme.typography.titleLarge)
+                Text(text = fileInfo, style = MaterialTheme.typography.bodyMedium)
             }
         }
     }

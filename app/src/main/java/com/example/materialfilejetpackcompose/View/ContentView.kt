@@ -168,7 +168,8 @@ class ContentView(private val fileViewModel: FileViewModel) {
 
     @Composable
     fun FileItem(file: File, context: Context, fileViewModel: FileViewModel, isGridView: Boolean) {
-        var isSelected by remember { mutableStateOf(false) }
+        val selectedFiles by fileViewModel.selectedFiles.observeAsState(emptySet())
+        var isSelected = selectedFiles!!.contains(file)
         val isDarkMode = isSystemInDarkTheme()
 
         ListItem(
@@ -251,7 +252,7 @@ class ContentView(private val fileViewModel: FileViewModel) {
                         if (it) {
                             fileViewModel.addSelectedFile(file)
                         } else {
-                            fileViewModel.updateSelectedFiles(file, true)
+                            fileViewModel.removeSelectedFile(file)
                         }
                     }
                 )

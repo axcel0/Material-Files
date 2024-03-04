@@ -49,9 +49,12 @@ import com.example.materialfilejetpackcompose.ViewModel.FileViewModel
 class SearchPageView(private val navController: NavController, private val fileViewModel: FileViewModel) {
 
     private var searchHistory = mutableListOf<String>()
-    private var searchQuery by mutableStateOf("")
     @Composable
     fun SearchPage() {
+        var searchQuery by remember { mutableStateOf("") }
+        val onSearchValueChanged = { value: String ->
+            searchQuery = value
+        }
         Column {
             Surface {
                 TopAppBar(
@@ -67,7 +70,7 @@ class SearchPageView(private val navController: NavController, private val fileV
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             BackButton()
-                            SearchInput()
+                            SearchInput(searchQuery, onSearchValueChanged)
                             MenuButton()
                         }
                     },
@@ -99,15 +102,12 @@ class SearchPageView(private val navController: NavController, private val fileV
     }
 
     @Composable
-    fun SearchInput() {
+    fun SearchInput(searchQuery:String, onSearchValueChanged: (String) -> Unit){
         val focusManager = LocalFocusManager.current
-        var searchQuery by remember { mutableStateOf("") }
 
         OutlinedTextField(
             value = searchQuery,
-            onValueChange = { query ->
-                searchQuery = query
-            },
+            onValueChange = onSearchValueChanged,
             placeholder = { Text("Search..") },
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
@@ -163,7 +163,9 @@ class SearchPageView(private val navController: NavController, private val fileV
 
     @Composable
     fun SearchHistory() {
-        val searchHistorySnapshot = searchHistory.toList() // Create a copy of the searchHistory
+        val searchHistorySnapshot by remember {
+            mutableStateOf(searchHistory.toList())
+        }  // Create a copy of the searchHistory
 
         LazyColumn {
             items(searchHistorySnapshot) { query ->

@@ -209,10 +209,10 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
         selectedFiles.value?.let { selectedFiles ->
             if (selectedFiles.isEmpty()) return
 
-            _files.value = _files.value?.minus(selectedFiles)
             selectedFiles.forEach { file ->
                 try {
                     Files.delete(Paths.get(file.absolutePath))
+                    _files.value = _files.value?.minus(selectedFiles)
                 } catch (e: Exception) {
                     println("Failed to delete file: ${file.absolutePath}")
                     println("Reason: ${e.message}")

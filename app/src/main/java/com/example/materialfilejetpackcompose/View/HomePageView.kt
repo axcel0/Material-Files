@@ -39,6 +39,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.NavHostController
 import com.example.materialfilejetpackcompose.ViewModel.FileViewModel
 
@@ -54,6 +55,7 @@ class HomePageView(private val navController: NavHostController, private val fil
         )
         val selectedFiles = fileViewModel.selectedFiles.observeAsState()
         var isDropdownMenuVisible by remember { mutableStateOf(false) }
+        var shouldShowNewFolderDialog by remember { mutableStateOf(false) }
 
         Surface {
             val focusManager = LocalFocusManager.current
@@ -136,6 +138,7 @@ class HomePageView(private val navController: NavHostController, private val fil
                             DropdownMenuItem(
                                 text = { Text("New folder") },
                                 onClick = {
+                                    shouldShowNewFolderDialog = true
                                     isDropdownMenuVisible = false
                                 }
                             )
@@ -183,6 +186,11 @@ class HomePageView(private val navController: NavHostController, private val fil
                         }
                     }
                 }
+                if (shouldShowNewFolderDialog) {
+                    NewFolderDialog {
+                        shouldShowNewFolderDialog = false
+                    }
+                }
             }
         }
     }
@@ -228,12 +236,13 @@ class HomePageView(private val navController: NavHostController, private val fil
     }
 
     @Composable
-    fun NewFolderDialog(shouldShowNewFolderDialog: MutableState<Boolean>, onCancel: () -> Unit = {}) {
+    fun NewFolderDialog(onCancel: () -> Unit = {}) {
         var folderName by remember { mutableStateOf("") }
         val focusManager = LocalFocusManager.current
 
         Dialog(
-            onDismissRequest = { shouldShowNewFolderDialog.value = false },
+            onDismissRequest = onCancel,
+            properties = DialogProperties(dismissOnBackPress = true, dismissOnClickOutside = true)
         ) {
             Column(
                 modifier = Modifier
@@ -254,7 +263,7 @@ class HomePageView(private val navController: NavHostController, private val fil
                             val currentDir = fileViewModel.currentDirectory.value
                             if (currentDir != null) {
                                 fileViewModel.createNewFolder(currentDir.absolutePath, folderName)
-                                shouldShowNewFolderDialog.value = false
+                                onCancel()
                             }
                         }
                     ),
@@ -265,10 +274,8 @@ class HomePageView(private val navController: NavHostController, private val fil
 
                 Row {
                     Button(
-                        onClick = {
-                            shouldShowNewFolderDialog.value = false
-                            onCancel()
-                        },
+                        onClick = onCancel,
+
                         modifier = Modifier
                             .padding(16.dp)
                             .weight(1f)
@@ -280,7 +287,7 @@ class HomePageView(private val navController: NavHostController, private val fil
                             val currentDir = fileViewModel.currentDirectory.value
                             if (currentDir != null) {
                                 fileViewModel.createNewFolder(currentDir.absolutePath, folderName)
-                                shouldShowNewFolderDialog.value = false
+                                onCancel()
                             }
                         },
                         modifier = Modifier

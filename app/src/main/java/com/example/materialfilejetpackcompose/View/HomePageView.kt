@@ -39,8 +39,11 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavHostController
 import com.example.materialfilejetpackcompose.ViewModel.FileViewModel
+import com.example.materialfilejetpackcompose.ViewModel.FileViewModelFactory
+import java.io.File
 
 class HomePageView(private val navController: NavHostController, private val fileViewModel: FileViewModel) {
 
@@ -55,10 +58,12 @@ class HomePageView(private val navController: NavHostController, private val fil
         val selectedFiles = fileViewModel.selectedFiles.observeAsState()
         var isDropdownMenuVisible by remember { mutableStateOf(false) }
         var shouldShowNewFolderDialog by remember { mutableStateOf(false) }
-        var filesToCopy = fileViewModel.filesToCopy.observeAsState()
+        val filesToCopy = fileViewModel.filesToCopy.observeAsState()
         var ableToPaste by remember { mutableStateOf(false) }
         var shouldShowFileInfo by remember { mutableStateOf(false) }
         var fileInfo: String by remember { mutableStateOf("") }
+        var shouldShowRenameDialog by remember { mutableStateOf(false) }
+        var oldFile by remember { mutableStateOf<File?>(null) }
 
         Surface {
             val focusManager = LocalFocusManager.current
@@ -160,6 +165,14 @@ class HomePageView(private val navController: NavHostController, private val fil
                 ) {
                     val contentView by lazy { ContentView(fileViewModel) }
                     contentView.Content()
+                    if (shouldShowRenameDialog && oldFile != null) {
+                        RenameFileDialog(oldFile = oldFile!!, onRename = { newName ->
+                            fileViewModel.renameFile(oldFile!!, newName)
+                            shouldShowRenameDialog = false
+                        }, onCancel = {
+                            shouldShowRenameDialog = false
+                        })
+                    }
                 }
 
                 BottomAppBar(
@@ -173,7 +186,9 @@ class HomePageView(private val navController: NavHostController, private val fil
                             .padding(16.dp),
                         horizontalArrangement = Arrangement.Center
                     ) {
-                        val actions = listOf(
+                        val isSingleFileSelected = selectedFiles.value!!.count() == 1
+
+                        val actions = listOfNotNull(
                             Pair(Icons.Default.Delete, "Delete") to {
                                 fileViewModel.deleteFiles()
                             },
@@ -181,29 +196,30 @@ class HomePageView(private val navController: NavHostController, private val fil
                             if (!ableToPaste) Pair(Icons.Default.ContentCut, "Cut") to {
                                 ableToPaste = true
                                 fileViewModel.cutFiles(selectedFiles.value!!)
-                            } else Pair(null, "") to {},
+                            } else null,
 
                             if (ableToPaste) Pair(Icons.Default.ContentPaste, "Paste") to {
                                 ableToPaste = false
                                 fileViewModel.pasteFiles(fileViewModel.currentDirectory.value!!)
-                            }
-                            else Pair(Icons.Default.CopyAll, "Copy") to {
+                            } else Pair(Icons.Default.CopyAll, "Copy") to {
                                 ableToPaste = true
                                 fileViewModel.copyFiles(selectedFiles.value!!)
                             },
 
-                            /*if (selectedFiles.value!!.count() == 1) Pair(Icons.Default.Edit, "Rename") to {
-                            }
-                            else Pair(null, "") to {}*/
-
-                            if (selectedFiles.value!!.count() == 1) Pair(Icons.Default.Info, "Info") to {
+                            if (isSingleFileSelected) Pair(Icons.Default.Info, "Info") to {
                                 shouldShowFileInfo = true
                                 fileInfo = fileViewModel.getFileInfo(selectedFiles.value!!.first())
-                            } else Pair(null, "") to {}
+                            } else null,
+
+                            if (isSingleFileSelected) Pair(Icons.Default.Edit, "Rename") to {
+                                oldFile = selectedFiles.value!!.first()
+                                shouldShowRenameDialog = true
+                            } else null,
+
                         )
 
                         actions.forEach { (iconData, action) ->
-                            iconData.first?.let { ActionButton(imageVector = it, text = iconData.second, onClick = action) }
+                            ActionButton(imageVector = iconData.first, text = iconData.second, onClick = action)
                         }
                     }
                 }
@@ -318,6 +334,63 @@ class HomePageView(private val navController: NavHostController, private val fil
                             .weight(1f)
                     ) {
                         Text("Create")
+                    }
+                }
+            }
+        }
+    }
+
+    @Composable
+    fun RenameFileDialog(oldFile: File, onRename: (String) -> Unit, onCancel: () -> Unit = {}) {
+        var newName by remember { mutableStateOf("") }
+        val focusManager = LocalFocusManager.current
+
+        Dialog(
+            onDismissRequest = onCancel,
+            properties = DialogProperties(dismissOnBackPress = true, dismissOnClickOutside = true)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.background)
+                    .padding(16.dp)
+            ) {
+                Text(text = "Rename File", style = MaterialTheme.typography.titleLarge)
+
+                OutlinedTextField(
+                    value = newName,
+                    onValueChange = { newName = it },
+                    label = { Text("New Name") },
+                    keyboardOptions = KeyboardOptions.Default.copy(imeAction = androidx.compose.ui.text.input.ImeAction.Done),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            focusManager.clearFocus()
+                            onRename(newName)
+                        }
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                )
+
+                Row {
+                    Button(
+                        onClick = onCancel,
+                        modifier = Modifier
+                            .padding(16.dp)
+                            .weight(1f)
+                    ) {
+                        Text("Cancel")
+                    }
+                    Button(
+                        onClick = {
+                            onRename(newName)
+                        },
+                        modifier = Modifier
+                            .padding(16.dp)
+                            .weight(1f)
+                    ) {
+                        Text("Rename")
                     }
                 }
             }

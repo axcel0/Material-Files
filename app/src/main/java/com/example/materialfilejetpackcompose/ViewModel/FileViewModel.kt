@@ -160,11 +160,13 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
     }
 
     fun searchAllFiles(query: String) {
-
-        val results = currentDirectory.value?.walk()?.filter { file ->
-            file.name.contains(query, ignoreCase = true)
-        }?.toList() ?: emptyList()
-
+        val results = mutableListOf<File>()
+        val root = File("/")
+        root.walk().forEach { file ->
+            if (file.name.contains(query, ignoreCase = true)) {
+                results.add(file)
+            }
+        }
         _searchResults.value = results
     }
 
@@ -273,10 +275,16 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
     }
 
     fun pasteFiles(destinationDirectory: File) {
+        // Check if the directory is empty
+        if (destinationDirectory.listFiles()?.isEmpty() == true) {
+            // Copy the empty directory to the home directory
+            destinationDirectory.copyTo(getHomeDirectory())
+            return
+        }
+
         filesToCopy.value?.forEach { file ->
             val isInSameDirectory = file.parent == destinationDirectory.absolutePath
-            if (!isCopying && isInSameDirectory)
-            {
+            if (!isCopying && isInSameDirectory) {
                 return
             }
 

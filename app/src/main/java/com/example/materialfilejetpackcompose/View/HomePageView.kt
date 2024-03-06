@@ -39,10 +39,8 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavHostController
 import com.example.materialfilejetpackcompose.ViewModel.FileViewModel
-import com.example.materialfilejetpackcompose.ViewModel.FileViewModelFactory
 import java.io.File
 
 class HomePageView(private val navController: NavHostController, private val fileViewModel: FileViewModel) {
@@ -71,7 +69,7 @@ class HomePageView(private val navController: NavHostController, private val fil
                 Modifier
                     .fillMaxHeight()
                     .width(widthAnim)
-                    .background(MaterialTheme.colorScheme.secondaryContainer)
+                    .background(MaterialTheme.colorScheme.background)
                     .padding(horizontal = 10.dp, vertical = 10.dp)
                     .onFocusChanged { focusState ->
                         isExpanded = focusState.isFocused
@@ -166,61 +164,54 @@ class HomePageView(private val navController: NavHostController, private val fil
                     val contentView by lazy { ContentView(fileViewModel) }
                     contentView.Content()
                     if (shouldShowRenameDialog && oldFile != null) {
-                        RenameFileDialog(oldFile = oldFile!!, onRename = { newName ->
+                        RenameFileDialog(onRename = { newName ->
                             fileViewModel.renameFile(oldFile!!, newName)
                             shouldShowRenameDialog = false
-                        }, onCancel = {
+                        }) {
                             shouldShowRenameDialog = false
-                        })
+                        }
                     }
                 }
 
                 BottomAppBar(
                     modifier = Modifier
                         .padding(start = widthAnim)
-                        .fillMaxWidth()
+                        .fillMaxHeight()
+                        .align(Alignment.End)
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        val isSingleFileSelected = selectedFiles.value!!.count() == 1
+                    val isSingleFileSelected = selectedFiles.value!!.count() == 1
 
-                        val actions = listOfNotNull(
-                            Pair(Icons.Default.Delete, "Delete") to {
-                                fileViewModel.deleteFiles()
-                            },
+                    val actions = listOfNotNull(
+                        Pair(Icons.Default.Delete, "Delete") to {
+                            fileViewModel.deleteFiles()
+                        },
 
-                            if (!ableToPaste) Pair(Icons.Default.ContentCut, "Cut") to {
-                                ableToPaste = true
-                                fileViewModel.cutFiles(selectedFiles.value!!)
-                            } else null,
+                        if (!ableToPaste) Pair(Icons.Default.ContentCut, "Cut") to {
+                            ableToPaste = true
+                            fileViewModel.cutFiles(selectedFiles.value!!)
+                        } else null,
 
-                            if (ableToPaste) Pair(Icons.Default.ContentPaste, "Paste") to {
-                                ableToPaste = false
-                                fileViewModel.pasteFiles(fileViewModel.currentDirectory.value!!)
-                            } else Pair(Icons.Default.CopyAll, "Copy") to {
-                                ableToPaste = true
-                                fileViewModel.copyFiles(selectedFiles.value!!)
-                            },
+                        if (ableToPaste) Pair(Icons.Default.ContentPaste, "Paste") to {
+                            ableToPaste = false
+                            fileViewModel.pasteFiles(fileViewModel.currentDirectory.value!!)
+                        } else Pair(Icons.Default.CopyAll, "Copy") to {
+                            ableToPaste = true
+                            fileViewModel.copyFiles(selectedFiles.value!!)
+                        },
 
-                            if (isSingleFileSelected) Pair(Icons.Default.Info, "Info") to {
-                                shouldShowFileInfo = true
-                                fileInfo = fileViewModel.getFileInfo(selectedFiles.value!!.first())
-                            } else null,
+                        if (isSingleFileSelected) Pair(Icons.Default.Info, "Info") to {
+                            shouldShowFileInfo = true
+                            fileInfo = fileViewModel.getFileInfo(selectedFiles.value!!.first())
+                        } else null,
 
-                            if (isSingleFileSelected) Pair(Icons.Default.Edit, "Rename") to {
-                                oldFile = selectedFiles.value!!.first()
-                                shouldShowRenameDialog = true
-                            } else null,
+                        if (isSingleFileSelected) Pair(Icons.Default.Edit, "Rename") to {
+                            oldFile = selectedFiles.value!!.first()
+                            shouldShowRenameDialog = true
+                        } else null,
+                    )
 
-                        )
-
-                        actions.forEach { (iconData, action) ->
-                            ActionButton(imageVector = iconData.first, text = iconData.second, onClick = action)
-                        }
+                    actions.forEach { (iconData, action) ->
+                        ActionButton(imageVector = iconData.first, text = iconData.second, onClick = action)
                     }
                 }
 
@@ -341,7 +332,7 @@ class HomePageView(private val navController: NavHostController, private val fil
     }
 
     @Composable
-    fun RenameFileDialog(oldFile: File, onRename: (String) -> Unit, onCancel: () -> Unit = {}) {
+    fun RenameFileDialog(onRename: (String) -> Unit, onCancel: () -> Unit = {}) {
         var newName by remember { mutableStateOf("") }
         val focusManager = LocalFocusManager.current
 

@@ -16,6 +16,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -23,6 +24,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.Composable
@@ -271,18 +273,10 @@ class HomePageView(private val navController: NavHostController, private val fil
         var folderName by remember { mutableStateOf("") }
         val focusManager = LocalFocusManager.current
 
-        Dialog(
+        AlertDialog(
             onDismissRequest = onCancel,
-            properties = DialogProperties(dismissOnBackPress = true, dismissOnClickOutside = true)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.background)
-                    .padding(16.dp)
-            ) {
-                Text(text = "Create new folder", style = MaterialTheme.typography.titleLarge)
-
+            title = { Text(text = "Create new folder", style = MaterialTheme.typography.titleLarge) },
+            text = {
                 OutlinedTextField(
                     value = folderName,
                     onValueChange = { folderName = it },
@@ -302,33 +296,24 @@ class HomePageView(private val navController: NavHostController, private val fil
                         .fillMaxWidth()
                         .padding(16.dp)
                 )
-
-                Row {
-                    Button(
-                        onClick = onCancel,
-                        modifier = Modifier
-                            .padding(16.dp)
-                            .weight(1f)
-                    ) {
-                        Text("Cancel")
+            },
+            confirmButton = {
+                TextButton(onClick = onCancel) {
+                    Text("Cancel")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    val currentDir = fileViewModel.currentDirectory.value
+                    if (currentDir != null) {
+                        fileViewModel.createNewFolder(currentDir.absolutePath, folderName)
+                        onCancel()
                     }
-                    Button(
-                        onClick = {
-                            val currentDir = fileViewModel.currentDirectory.value
-                            if (currentDir != null) {
-                                fileViewModel.createNewFolder(currentDir.absolutePath, folderName)
-                                onCancel()
-                            }
-                        },
-                        modifier = Modifier
-                            .padding(16.dp)
-                            .weight(1f)
-                    ) {
-                        Text("Create")
-                    }
+                }) {
+                    Text("Create")
                 }
             }
-        }
+        )
     }
 
     @Composable
@@ -336,18 +321,10 @@ class HomePageView(private val navController: NavHostController, private val fil
         var newName by remember { mutableStateOf("") }
         val focusManager = LocalFocusManager.current
 
-        Dialog(
+        AlertDialog(
             onDismissRequest = onCancel,
-            properties = DialogProperties(dismissOnBackPress = true, dismissOnClickOutside = true)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.background)
-                    .padding(16.dp)
-            ) {
-                Text(text = "Rename File", style = MaterialTheme.typography.titleLarge)
-
+            title = { Text(text = "Rename File", style = MaterialTheme.typography.titleLarge) },
+            text = {
                 OutlinedTextField(
                     value = newName,
                     onValueChange = { newName = it },
@@ -363,47 +340,32 @@ class HomePageView(private val navController: NavHostController, private val fil
                         .fillMaxWidth()
                         .padding(16.dp)
                 )
-
-                Row {
-                    Button(
-                        onClick = onCancel,
-                        modifier = Modifier
-                            .padding(16.dp)
-                            .weight(1f)
-                    ) {
-                        Text("Cancel")
-                    }
-                    Button(
-                        onClick = {
-                            onRename(newName)
-                        },
-                        modifier = Modifier
-                            .padding(16.dp)
-                            .weight(1f)
-                    ) {
-                        Text("Rename")
-                    }
+            },
+            confirmButton = {
+                TextButton(onClick = onCancel) {
+                    Text("Cancel")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { onRename(newName) }) {
+                    Text("Rename")
                 }
             }
-        }
+        )
     }
 
     @Composable
     fun FileInfoDialog(fileInfo: String, onCancel: () -> Unit) {
-        Dialog(
+        AlertDialog(
             onDismissRequest = onCancel,
-            properties = DialogProperties(dismissOnBackPress = true, dismissOnClickOutside = true)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.background)
-                    .padding(16.dp)
-            ) {
-                Text(text = "File Info", style = MaterialTheme.typography.titleLarge)
-                Text(text = fileInfo, style = MaterialTheme.typography.bodyMedium)
+            title = { Text(text = "File Info", style = MaterialTheme.typography.titleLarge) },
+            text = { Text(text = fileInfo, style = MaterialTheme.typography.bodyMedium) },
+            confirmButton = {
+                TextButton(onClick = onCancel) {
+                    Text("OK")
+                }
             }
-        }
+        )
     }
 }
 

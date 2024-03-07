@@ -13,6 +13,8 @@ import java.util.Stack
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.Path
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
 enum class SortType {
@@ -330,7 +332,8 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
     }
 
     fun getFileInfo(file: File): String {
-        val lastModified = file.lastModified()
+        val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+        val lastModified = sdf.format(Date(file.lastModified()))
         val size = file.length()
         val type = if (file.isDirectory) "Folder" else "File"
         return "Type: $type\nSize: $size bytes\nLast Modified: $lastModified"

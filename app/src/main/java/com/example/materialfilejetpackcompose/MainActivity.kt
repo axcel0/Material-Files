@@ -48,19 +48,6 @@ class MainActivity : ComponentActivity() {
         FileViewModelFactory(applicationContext)
     }
 
-    /*override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        return if (keyCode == KeyEvent.KEYCODE_BACK) {
-            val currentDirectory = fileViewModel.currentDirectory.value
-            if (currentDirectory?.parentFile != null) {
-                fileViewModel.loadInternalStorage(currentDirectory.parentFile!!)
-            }
-            true
-        } else {
-            super.onKeyDown(keyCode, event)
-        }
-    }*/
-
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 

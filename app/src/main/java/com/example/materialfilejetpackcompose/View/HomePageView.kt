@@ -1,5 +1,8 @@
 package com.example.materialfilejetpackcompose.View
 
+import android.content.Context
+import android.hardware.usb.UsbDevice
+import android.hardware.usb.UsbManager
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.fadeIn
@@ -41,6 +44,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.core.content.ContextCompat.getSystemService
 import androidx.navigation.NavHostController
 import com.example.materialfilejetpackcompose.ViewModel.FileViewModel
 import java.io.File
@@ -157,7 +161,6 @@ class HomePageView(private val navController: NavHostController, private val fil
             Column(Modifier.fillMaxSize()) {
                 //distance between top app bar and content
                 Spacer(modifier = Modifier.height(60.dp))
-
                 Column(
                     Modifier
                         .padding(start = widthAnim)

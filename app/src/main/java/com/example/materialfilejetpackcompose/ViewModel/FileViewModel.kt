@@ -2,6 +2,8 @@ package com.example.materialfilejetpackcompose.ViewModel
 
 import android.content.Context
 import android.content.Intent
+import android.hardware.usb.UsbDevice
+import android.hardware.usb.UsbManager
 import android.net.Uri
 import android.widget.Toast
 import androidx.lifecycle.LiveData
@@ -58,6 +60,24 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
         }
         (currentDirectory as MutableLiveData).postValue(directory)
         selectedFiles.value = emptySet()
+
+        // Check if a USB device is connected load the files
+//        if (checkUSBConnection()) {
+//            Toast.makeText(appContext, "USB Connected", Toast.LENGTH_SHORT).show()
+//            val usbManager = appContext.getSystemService(Context.USB_SERVICE) as UsbManager
+//            val deviceList: HashMap<String, UsbDevice> = usbManager.deviceList
+//            val device = deviceList.values.first()
+//            val usbRoot = File("/mnt/media_rw/${device.deviceName}")
+//            val usbFiles = usbRoot.listFiles()?.toList()
+//            (files as MutableLiveData).postValue(usbFiles)
+//            currentDirectory.postValue(usbRoot)
+//        }
+    }
+
+    private fun checkUSBConnection(): Boolean {
+        val usbManager = appContext.getSystemService(Context.USB_SERVICE) as UsbManager
+        val deviceList: HashMap<String, UsbDevice> = usbManager.deviceList
+        return deviceList.isNotEmpty()
     }
 
     fun getHomeDirectory(): File {
@@ -108,22 +128,6 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
     fun isFileAudio(file: File): Boolean {
         val audioExtensions = listOf("mp3", "wav", "aac", "flac")
         return audioExtensions.contains(file.extension.lowercase(Locale.ROOT))
-    }
-
-    private fun loadFilesWithExtensions(directory: File? = null, extensions: List<String>) {
-        val path = directory?.absolutePath
-        directoryStack.push(directory)
-        _currentPath.postValue(directoryStack.joinToString(separator = "/") { it.name })
-        if (path != null) {
-            if (path.contains("/Android/data") || path.contains("/Android/obb")) {
-                return
-            }
-        }
-        if (directory != null) {
-            val filteredFiles = directory.listFiles()?.filter { it.extension in extensions }
-            (files as MutableLiveData).postValue(filteredFiles)
-        }
-        (currentDirectory as MutableLiveData).postValue(directory)
     }
 
     private fun loadAllFilesWithExtensions(directory: File? = null, extensions: List<String>) {

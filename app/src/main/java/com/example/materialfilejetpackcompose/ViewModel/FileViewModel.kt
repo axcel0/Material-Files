@@ -158,21 +158,14 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
 
     fun searchFiles(query: String) {
         val currentDir = currentDirectory.value
-        val results = currentDir?.listFiles { dir, name ->
-            name.contains(query, ignoreCase = true)
-        }?.toList() ?: emptyList()
-
-        _searchResults.value = results
-    }
-
-    fun searchAllFiles(query: String) {
         val results = mutableListOf<File>()
-        val root = File("/")
-        root.walk().forEach { file ->
+
+        currentDir?.walk()?.forEach { file ->
             if (file.name.contains(query, ignoreCase = true)) {
                 results.add(file)
             }
         }
+
         _searchResults.value = results
     }
 

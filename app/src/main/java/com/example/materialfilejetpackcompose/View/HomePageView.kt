@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -121,7 +122,7 @@ class HomePageView(private val navController: NavHostController, private val fil
                 }
             }
 
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 modifier = Modifier
                     .padding(start = widthAnim)
                     .fillMaxWidth(),

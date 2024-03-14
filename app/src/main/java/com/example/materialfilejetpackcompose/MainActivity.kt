@@ -3,22 +3,34 @@ package com.example.materialfilejetpackcompose
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.view.View.OnFocusChangeListener
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.border
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.indication
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import com.example.materialfilejetpackcompose.ui.theme.MaterialFileJetpackComposeTheme
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -27,6 +39,7 @@ import com.example.materialfilejetpackcompose.View.SearchPageView
 import com.example.materialfilejetpackcompose.View.SettingsPageView
 import com.example.materialfilejetpackcompose.ViewModel.FileViewModel
 import com.example.materialfilejetpackcompose.ViewModel.FileViewModelFactory
+import com.example.materialfilejetpackcompose.ui.theme.MaterialFileJetpackComposeTheme
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
@@ -132,15 +145,27 @@ class MainActivity : ComponentActivity() {
             title = { Text(title) },
             text = { Text(message) },
             confirmButton = {
-                Button(
-                    onClick = onConfirm
+                val interactionSource = remember { MutableInteractionSource() }
+                val isFocused = interactionSource.collectIsFocusedAsState()
+                TextButton(
+                    onClick = onConfirm,
+                    modifier = Modifier.focusable(interactionSource = interactionSource),
+                    colors = ButtonDefaults.textButtonColors(
+                        if (isFocused.value) Color.DarkGray else Color.Transparent
+                    )
                 ) {
                     Text("Exit")
                 }
             },
             dismissButton = {
-                Button(
-                    onClick = onDismiss
+                val interactionSource = remember { MutableInteractionSource() }
+                val isFocused = interactionSource.collectIsFocusedAsState()
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.focusable(interactionSource = interactionSource),
+                    colors = ButtonDefaults.textButtonColors(
+                        if (isFocused.value) Color.DarkGray else Color.Transparent
+                    )
                 ) {
                     Text("Cancel")
                 }

@@ -1,5 +1,11 @@
 package com.example.materialfilejetpackcompose.View
 
+import android.content.Intent
+import android.graphics.Bitmap
+import android.media.MediaMetadataRetriever
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +26,7 @@ import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -39,10 +46,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.navigation.NavController
+import coil.compose.rememberAsyncImagePainter
+import coil.compose.rememberImagePainter
 import com.example.materialfilejetpackcompose.ViewModel.FileViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -184,28 +196,90 @@ class SearchPageView(private val navController: NavController, private val fileV
         }
     }
 
+    @OptIn(ExperimentalFoundationApi::class)
     @Composable
     fun SearchResults() {
         val searchResults by fileViewModel.searchResults.observeAsState(emptyList())
+        val context = LocalContext.current
 
         LazyColumn {
             items(searchResults) { file ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(8.dp),
+                        .padding(8.dp)
+                        .combinedClickable(
+                            onClick = {
+                                if (file.isDirectory) {
+                                    // Navigate to the directory
+                                    fileViewModel.loadStorage(file)
+                                    //then close the search page
+                                    navController.navigate("home")
+                                } else {
+                                    // Open the file with the default app
+                                    fileViewModel.openMediaFile(file)
+                                }
+                            },
+                            onLongClick = { /* Handle long click if needed */ }
+                        ),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Folder,
-                        contentDescription = "Folder Icon",
-                        modifier = Modifier.size(24.dp),
-                        tint = Color(0xFFFFA400)
-                    )
+                    when {
+                        file.isDirectory -> {
+                            Icon(
+                                imageVector = Icons.Default.Folder,
+                                contentDescription = "Folder Icon",
+                                modifier = Modifier.size(24.dp),
+                                tint = Color(0xFFFFA400)
+                            )
+                        }
+                        fileViewModel.isFilePhoto(file) -> {
+                            // Display image thumbnail
+                            val imageBitmap = rememberAsyncImagePainter(file.path)
+                            Image(
+                                painter = imageBitmap,
+                                contentDescription = "Image Thumbnail",
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        fileViewModel.isFileVideo(file) -> {
+                            // Display video thumbnail
+                            val thumbnail = rememberVideoThumbnail(file.path)
+                            Image(
+                                bitmap = thumbnail!!.asImageBitmap(),
+                                contentDescription = "Video Thumbnail",
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        fileViewModel.isFileAudio(file) -> {
+                            Icon(
+                                imageVector = Icons.Default.MusicNote,
+                                contentDescription = "Audio Icon",
+                                modifier = Modifier.size(24.dp),
+                                tint = Color(0xFFFFA400)
+                            )
+                        }
+                        else -> {
+                            Icon(
+                                imageVector = Icons.Default.Folder,
+                                contentDescription = "File Icon",
+                                modifier = Modifier.size(24.dp),
+                                tint = Color(0xFFFFA400)
+                            )
+                        }
+                    }
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(text = file.name)
                 }
             }
         }
+    }
+    @Composable
+    fun rememberVideoThumbnail(filePath: String): Bitmap? {
+        val mediaMetadataRetriever = MediaMetadataRetriever()
+        mediaMetadataRetriever.setDataSource(filePath)
+        val bitmap = mediaMetadataRetriever.getFrameAtTime(1000, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
+        mediaMetadataRetriever.release()
+        return bitmap
     }
 }

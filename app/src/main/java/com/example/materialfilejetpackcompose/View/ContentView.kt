@@ -1,10 +1,12 @@
 package com.example.materialfilejetpackcompose.View
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.media.MediaMetadataRetriever
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,7 +32,6 @@ import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.VideoFile
 import androidx.compose.material.icons.filled.ViewModule
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
@@ -42,17 +43,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.semantics.Role.Companion.Image
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
-import coil.compose.rememberImagePainter
 import coil.request.ImageRequest
 import com.example.materialfilejetpackcompose.ViewModel.FileViewModel
 import com.example.materialfilejetpackcompose.ViewModel.SortType
@@ -168,16 +168,26 @@ class ContentView(private val fileViewModel: FileViewModel) {
         }
     }
 
+    @OptIn(ExperimentalFoundationApi::class)
     @Composable
     fun FileItem(file: File, context: Context, fileViewModel: FileViewModel, isGridView: Boolean) {
         val selectedFiles by fileViewModel.selectedFiles.observeAsState(emptySet())
         var isSelected = selectedFiles!!.contains(file)
         val isDarkMode = isSystemInDarkTheme()
+        val maxChars = if (isGridView) 16 else 32
+        val displayName = if (file.name.length > maxChars) {
+            file.name.substring(0, maxChars) + "..."
+        } else {
+            file.name
+        }
+        LaunchedEffect(selectedFiles) {
+            isSelected = selectedFiles!!.contains(file)
+        }
 
         ListItem(
             headlineContent = {
                 Text(
-                    text = file.name,
+                    text = displayName,
                     fontSize = if (isGridView) 20.sp else 24.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -212,18 +222,19 @@ class ContentView(private val fileViewModel: FileViewModel) {
                         )
                     }
                     fileViewModel.isFileVideo(file) -> {
-                        Icon(
-                            imageVector = Icons.Default.VideoFile,
-                            contentDescription = "Video",
+                        // Display video thumbnail
+                        val thumbnail = rememberVideoThumbnail(file.path)
+                        Image(
+                            bitmap = thumbnail!!.asImageBitmap(),
+                            contentDescription = "Video Thumbnail",
                             modifier = if (isGridView) Modifier.size(72.dp) else Modifier.size(24.dp),
-                            tint = Color(0xFF757575)
                         )
                     }
                     else -> {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.InsertDriveFile,
                             contentDescription = "File",
-                            modifier = if (isGridView) Modifier.size(72.dp) else Modifier,
+                            modifier = if (isGridView) Modifier.size(72.dp) else Modifier.size(24.dp),
                             tint = Color(0xFF757575)
                         )
                     }
@@ -247,18 +258,32 @@ class ContentView(private val fileViewModel: FileViewModel) {
                 )
                 .padding(8.dp),
             trailingContent = {
-                Checkbox(
-                    checked = isSelected,
-                    onCheckedChange = {
-                        isSelected = it
-                        if (it) {
-                            fileViewModel.addSelectedFile(file)
-                        } else {
-                            fileViewModel.removeSelectedFile(file)
+                if (selectedFiles!!.isEmpty()) {
+                    Icon(
+                        imageVector = Icons.Filled.ArrowDownward,
+                        contentDescription = "Open"
+                    )
+                } else {
+                    Checkbox(
+                        checked = isSelected,
+                        onCheckedChange = {
+                            if (it) {
+                                fileViewModel.addSelectedFile(file)
+                            } else {
+                                fileViewModel.removeSelectedFile(file)
+                            }
                         }
-                    }
-                )
+                    )
+                }
             }
         )
+    }
+    @Composable
+    fun rememberVideoThumbnail(filePath: String): Bitmap? {
+        val mediaMetadataRetriever = MediaMetadataRetriever()
+        mediaMetadataRetriever.setDataSource(filePath)
+        val bitmap = mediaMetadataRetriever.getFrameAtTime(1000, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
+        mediaMetadataRetriever.release()
+        return bitmap
     }
 }

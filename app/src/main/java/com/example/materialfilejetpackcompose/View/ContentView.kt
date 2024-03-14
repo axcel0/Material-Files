@@ -258,23 +258,17 @@ class ContentView(private val fileViewModel: FileViewModel) {
                 )
                 .padding(8.dp),
             trailingContent = {
-                if (selectedFiles!!.isEmpty()) {
-                    Icon(
-                        imageVector = Icons.Filled.ArrowDownward,
-                        contentDescription = "Open"
-                    )
-                } else {
-                    Checkbox(
-                        checked = isSelected,
-                        onCheckedChange = {
-                            if (it) {
-                                fileViewModel.addSelectedFile(file)
-                            } else {
-                                fileViewModel.removeSelectedFile(file)
-                            }
+                Checkbox(
+                    checked = isSelected,
+                    onCheckedChange = {
+                        if (it) {
+                            fileViewModel.addSelectedFile(file)
+                        } else {
+                            fileViewModel.removeSelectedFile(file)
                         }
-                    )
-                }
+                    }
+                )
+
             }
         )
     }

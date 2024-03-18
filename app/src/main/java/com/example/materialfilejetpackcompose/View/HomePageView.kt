@@ -56,8 +56,13 @@ class HomePageView(private val navController: NavHostController, private val fil
     @Composable
     fun HomePage() {
         var isExpanded by remember { mutableStateOf(false) }
+        var shouldShowFileCanvasOperation by remember { mutableStateOf(false) }
         val widthAnim by animateDpAsState(
             targetValue = if (isExpanded) 200.dp else 50.dp,
+            label = ""
+        )
+        val widthAnime by animateDpAsState(
+            targetValue = if (shouldShowFileCanvasOperation) 200.dp else 0.dp,
             label = ""
         )
         val selectedFiles = fileViewModel.selectedFiles.observeAsState()
@@ -120,6 +125,22 @@ class HomePageView(private val navController: NavHostController, private val fil
                 DrawerItem(Icons.Default.Settings, "Settings", isExpanded) {
                     navController.navigate("settings")
                 }
+            }
+
+            Column(
+                Modifier
+                    .fillMaxHeight()
+                    .width(widthAnime)
+                    .background(MaterialTheme.colorScheme.background)
+                    .padding(horizontal = 10.dp, vertical = 10.dp)
+//                    .onFocusChanged { focusState ->
+//                        isExpanded = focusState.isFocused
+//                    },
+                        ,
+                horizontalAlignment = Alignment.Start,
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+
             }
 
             CenterAlignedTopAppBar(

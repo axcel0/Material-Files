@@ -242,10 +242,19 @@ class ContentView(private val fileViewModel: FileViewModel) {
             },
             modifier = Modifier
                 .clickable {
-                    if (file.isDirectory) {
-                        fileViewModel.loadStorage(file)
-                    } else if (fileViewModel.isFilePhoto(file) || fileViewModel.isFileAudio(file) || fileViewModel.isFileVideo(file)) {
-                        fileViewModel.openMediaFile(file)
+                    if (selectedFiles!!.isEmpty()) {
+                        if (file.isDirectory) {
+                            fileViewModel.loadStorage(file)
+                        } else if (fileViewModel.isFilePhoto(file) || fileViewModel.isFileAudio(file) || fileViewModel.isFileVideo(file)) {
+                            fileViewModel.openMediaFile(file)
+                        }
+                    } else {
+                        isSelected = !isSelected
+                        if (isSelected) {
+                            fileViewModel.addSelectedFile(file)
+                        } else {
+                            fileViewModel.removeSelectedFile(file)
+                        }
                     }
                 }
                 .background(

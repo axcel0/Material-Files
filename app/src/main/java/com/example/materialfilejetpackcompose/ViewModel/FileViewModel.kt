@@ -183,7 +183,7 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
         selectedFiles.value = mutableSelectedFiles
     }
 
-    private fun clearSelectedFiles() {
+    fun clearSelectedFiles() {
         selectedFiles.value = emptySet()
     }
 

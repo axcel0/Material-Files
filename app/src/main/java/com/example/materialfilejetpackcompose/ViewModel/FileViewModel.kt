@@ -5,6 +5,8 @@ import android.content.Intent
 import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
 import android.net.Uri
+import android.os.Environment
+import android.os.storage.StorageManager
 import android.widget.Toast
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -18,7 +20,7 @@ import java.nio.file.Path
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-
+import android.os.storage.StorageVolume
 enum class SortType {
     NAME, SIZE, DATE, TYPE
 }
@@ -46,32 +48,37 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
     private var searchHistories = mutableListOf<String>()
 
     fun loadStorage(directory: File? = null) {
-        val path = directory?.absolutePath
-        directoryStack.push(directory)
+        val rootDirectory = directory ?: Environment.getExternalStorageDirectory()
+        val path = rootDirectory.absolutePath
+        directoryStack.push(rootDirectory)
         _currentPath.postValue(directoryStack.joinToString(separator = "/") { it.name })
-        if (path != null) {
-            if (path.contains("/Android/data") || path.contains("/Android/obb")) {
-                return
+        if (path.contains("/Android/data") || path.contains("/Android/obb")) {
+            return
+        }
+        val filteredFiles = mutableListOf<File>()
+        filteredFiles.addAll(rootDirectory.listFiles()?.toList() ?: emptyList())
+        val externalFilesDirs = appContext.getExternalFilesDirs(null)
+        for (externalFilesDir in externalFilesDirs) {
+            if (externalFilesDir != null) {
+                filteredFiles.addAll(externalFilesDir.listFiles()?.toList() ?: emptyList())
             }
         }
-        if (directory != null) {
-            val filteredFiles = directory.listFiles()?.toList()
-            (files as MutableLiveData).postValue(filteredFiles)
-        }
-        (currentDirectory as MutableLiveData).postValue(directory)
-        selectedFiles.value = emptySet()
 
-        // Check if a USB device is connected load the files
-//        if (checkUSBConnection()) {
-//            Toast.makeText(appContext, "USB Connected", Toast.LENGTH_SHORT).show()
-//            val usbManager = appContext.getSystemService(Context.USB_SERVICE) as UsbManager
-//            val deviceList: HashMap<String, UsbDevice> = usbManager.deviceList
-//            val device = deviceList.values.first()
-//            val usbRoot = File("/mnt/media_rw/${device.deviceName}")
-//            val usbFiles = usbRoot.listFiles()?.toList()
-//            (files as MutableLiveData).postValue(usbFiles)
-//            currentDirectory.postValue(usbRoot)
-//        }
+        // Add USB drives
+        val storageManager = appContext.getSystemService(Context.STORAGE_SERVICE) as StorageManager
+        val storageVolumes = storageManager.storageVolumes
+        for (storageVolume in storageVolumes) {
+            if (storageVolume.isRemovable) {
+                val usbRoot = storageVolume.directory
+                if (usbRoot != null) {
+                    filteredFiles.addAll(usbRoot.listFiles()?.toList() ?: emptyList())
+                }
+            }
+        }
+
+        (files as MutableLiveData).postValue(filteredFiles)
+        (currentDirectory as MutableLiveData).postValue(rootDirectory)
+        selectedFiles.value = emptySet()
     }
 
     private fun checkUSBConnection(): Boolean {

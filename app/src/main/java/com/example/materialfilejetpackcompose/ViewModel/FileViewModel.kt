@@ -20,7 +20,7 @@ import java.nio.file.Path
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import android.os.storage.StorageVolume
+
 enum class SortType {
     NAME, SIZE, DATE, TYPE
 }
@@ -77,14 +77,42 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
         }
 
         (files as MutableLiveData).postValue(filteredFiles)
-        (currentDirectory as MutableLiveData).postValue(rootDirectory)
         selectedFiles.value = emptySet()
     }
 
-    private fun checkUSBConnection(): Boolean {
-        val usbManager = appContext.getSystemService(Context.USB_SERVICE) as UsbManager
-        val deviceList: HashMap<String, UsbDevice> = usbManager.deviceList
-        return deviceList.isNotEmpty()
+    fun loadExternalStorage() {
+        val filteredFiles = mutableListOf<File>()
+        val externalFilesDirs = appContext.getExternalFilesDirs(null)
+        for (externalFilesDir in externalFilesDirs) {
+            if (externalFilesDir != null) {
+                filteredFiles.addAll(externalFilesDir.listFiles()?.toList() ?: emptyList())
+            }
+        }
+
+        // Add USB drives
+        val storageManager = appContext.getSystemService(Context.STORAGE_SERVICE) as StorageManager
+        val storageVolumes = storageManager.storageVolumes
+        for (storageVolume in storageVolumes) {
+            if (storageVolume.isRemovable) {
+                val usbRoot = storageVolume.directory
+                if (usbRoot != null) {
+                    filteredFiles.addAll(usbRoot.listFiles()?.toList() ?: emptyList())
+                }
+            }
+        }
+
+        (files as MutableLiveData).postValue(filteredFiles)
+        selectedFiles.value = emptySet()
+    }
+
+    fun checkExternalStorage(): Boolean {
+        val externalFilesDirs = appContext.getExternalFilesDirs(null)
+        for (externalFilesDir in externalFilesDirs) {
+            if (externalFilesDir != null) {
+                return true
+            }
+        }
+        return false
     }
 
     fun getHomeDirectory(): File {

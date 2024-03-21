@@ -89,12 +89,12 @@ class ContentView(private val fileViewModel: FileViewModel) {
                         onDismissRequest = { isSortExpanded = false }
                     ) {
                         val list =
-                            listOf(
-                                "Sort by name",
-                                "Sort by date",
-                                "Sort by size",
-                                "Sort by directory"
-                            )
+                        listOf(
+                            "Sort by name",
+                            "Sort by date",
+                            "Sort by size",
+                            "Sort by directory"
+                        )
                         list.forEach { item ->
                             DropdownMenuItem(
                                 text = { Text(item) },

@@ -48,36 +48,21 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
     private var searchHistories = mutableListOf<String>()
 
     fun loadStorage(directory: File? = null) {
-        val rootDirectory = directory ?: Environment.getExternalStorageDirectory()
-        val path = rootDirectory.absolutePath
-        directoryStack.push(rootDirectory)
+        val path = directory?.absolutePath
+        directoryStack.push(directory)
         _currentPath.postValue(directoryStack.joinToString(separator = "/") { it.name })
-        if (path.contains("/Android/data") || path.contains("/Android/obb")) {
-            return
-        }
-        val filteredFiles = mutableListOf<File>()
-        filteredFiles.addAll(rootDirectory.listFiles()?.toList() ?: emptyList())
-        val externalFilesDirs = appContext.getExternalFilesDirs(null)
-        for (externalFilesDir in externalFilesDirs) {
-            if (externalFilesDir != null) {
-                filteredFiles.addAll(externalFilesDir.listFiles()?.toList() ?: emptyList())
+        if (path != null) {
+            if (path.contains("/Android/data") || path.contains("/Android/obb")) {
+                return
             }
         }
-
-        // Add USB drives
-        val storageManager = appContext.getSystemService(Context.STORAGE_SERVICE) as StorageManager
-        val storageVolumes = storageManager.storageVolumes
-        for (storageVolume in storageVolumes) {
-            if (storageVolume.isRemovable) {
-                val usbRoot = storageVolume.directory
-                if (usbRoot != null) {
-                    filteredFiles.addAll(usbRoot.listFiles()?.toList() ?: emptyList())
-                }
-            }
+        if (directory != null) {
+            val filteredFiles = directory.listFiles()?.toList()
+            (files as MutableLiveData).postValue(filteredFiles)
         }
-
-        (files as MutableLiveData).postValue(filteredFiles)
+        (currentDirectory as MutableLiveData).postValue(directory)
         selectedFiles.value = emptySet()
+
     }
 
     fun loadExternalStorage() {

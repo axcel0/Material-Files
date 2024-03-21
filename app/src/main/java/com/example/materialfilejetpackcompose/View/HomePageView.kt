@@ -40,6 +40,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.materialfilejetpackcompose.ViewModel.FileViewModel
+import com.example.materialfilejetpackcompose.ViewModel.SortType
 import java.io.File
 
 class HomePageView(private val navController: NavHostController, private val fileViewModel: FileViewModel) {
@@ -93,6 +94,45 @@ class HomePageView(private val navController: NavHostController, private val fil
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onPrimary
                 )
+                var selectedStorage by remember { mutableStateOf("Internal") }
+                DropdownMenu(
+                    expanded = isExpanded,
+                    onDismissRequest = { isExpanded = false }
+                ) {
+                    val list =
+                        listOf(
+                            "Internal Storage",
+                            "External Storage",
+                        )
+                    list.forEach {
+                        DropdownMenuItem(
+                            text = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    if (it == "External Storage") {
+                                        Icon(
+                                            imageVector = Icons.Default.Usb,
+                                            contentDescription = "USB",
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                    }else {
+                                        Icon(
+                                            imageVector = Icons.Default.PhoneAndroid,
+                                            contentDescription = "Phone",
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                    }
+                                }
+                            },
+                            onClick = {
+                                selectedStorage = it
+                                isExpanded = false
+                                fileViewModel.loadStorage(fileViewModel.getHomeDirectory())
+                            }
+                        )
+                    }
+                }
                 Column {
                     DrawerItem(Icons.Default.Folder, "All Files", isExpanded) {
                         val homeDir = fileViewModel.getHomeDirectory()

@@ -21,6 +21,8 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.Colors
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
@@ -67,6 +69,7 @@ class ContentView(private val fileViewModel: FileViewModel) {
         var isGridView by remember { mutableStateOf(false) }
         var sortType by remember { mutableStateOf(SortType.NAME) }
         var isAscending by remember { mutableStateOf(true) }
+        val currentDirectory by fileViewModel.currentDirectory.observeAsState()
 
         Column(
             modifier =Modifier.background(MaterialTheme.colorScheme.background)
@@ -76,6 +79,14 @@ class ContentView(private val fileViewModel: FileViewModel) {
                     .fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
             ) {
+                Text(
+                    text = currentDirectory?.path ?: "",
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold, color = Color.Black),
+                    modifier = Modifier
+                        .padding(top = 16.dp, bottom = 16.dp)
+                        .background(MaterialTheme.colorScheme.onPrimaryContainer, shape = RoundedCornerShape(8.dp))
+                        .padding(8.dp)
+                )
                 var isSortExpanded by remember { mutableStateOf(false) }
                 Box {
                     IconButton(onClick = { isSortExpanded = true }) {

@@ -24,9 +24,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -67,9 +69,12 @@ class HomePageView(private val navController: NavHostController, private val fil
         var fileInfo: String by remember { mutableStateOf("") }
         var shouldShowRenameDialog by remember { mutableStateOf(false) }
         var oldFile by remember { mutableStateOf<File?>(null) }
+        var isExternalStorage by remember { mutableStateOf(false) }
 
         Surface {
             val focusManager = LocalFocusManager.current
+            var selectedStorage by remember { mutableStateOf("Internal") }
+
             Column(
                 Modifier
                     .fillMaxHeight()
@@ -94,45 +99,7 @@ class HomePageView(private val navController: NavHostController, private val fil
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onPrimary
                 )
-                var selectedStorage by remember { mutableStateOf("Internal") }
-                DropdownMenu(
-                    expanded = isExpanded,
-                    onDismissRequest = { isExpanded = false }
-                ) {
-                    val list =
-                        listOf(
-                            "Internal Storage",
-                            "External Storage",
-                        )
-                    list.forEach {
-                        DropdownMenuItem(
-                            text = {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    if (it == "External Storage") {
-                                        Icon(
-                                            imageVector = Icons.Default.Usb,
-                                            contentDescription = "USB",
-                                            modifier = Modifier.size(24.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                    }else {
-                                        Icon(
-                                            imageVector = Icons.Default.PhoneAndroid,
-                                            contentDescription = "Phone",
-                                            modifier = Modifier.size(24.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                    }
-                                }
-                            },
-                            onClick = {
-                                selectedStorage = it
-                                isExpanded = false
-                                fileViewModel.loadStorage(fileViewModel.getHomeDirectory())
-                            }
-                        )
-                    }
-                }
+
                 Column {
                     DrawerItem(Icons.Default.Folder, "All Files", isExpanded) {
                         val homeDir = fileViewModel.getHomeDirectory()
@@ -152,6 +119,9 @@ class HomePageView(private val navController: NavHostController, private val fil
                         fileViewModel.currentDirectory.value?.let {
                             fileViewModel.loadAudiosOnly(it)
                         }
+                    }
+                    DrawerItem(Icons.Default.Usb, "External Storage", isExpanded) {
+                        fileViewModel.loadExternalStorage()
                     }
                 }
                 DrawerItem(Icons.Default.Settings, "Settings", isExpanded) {
@@ -292,6 +262,20 @@ class HomePageView(private val navController: NavHostController, private val fil
             }
             Text(text = text)
         }
+    }
+    @Composable
+    fun StorageSwitch(isExternalStorage: MutableState<Boolean>, fileViewModel: FileViewModel) {
+        Switch(
+            checked = isExternalStorage.value,
+            onCheckedChange = { isChecked ->
+                isExternalStorage.value = isChecked
+                if (isChecked) {
+                    fileViewModel.loadExternalStorage()
+                } else {
+                    fileViewModel.loadStorage(fileViewModel.getHomeDirectory())
+                }
+            }
+        )
     }
 
     @Composable

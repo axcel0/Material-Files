@@ -1,5 +1,9 @@
 package com.example.materialfilejetpackcompose.View
 
+import android.content.Context
+import android.hardware.usb.UsbDevice
+import android.hardware.usb.UsbManager
+import android.os.storage.StorageVolume
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.fadeIn
@@ -17,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -24,11 +29,10 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -38,11 +42,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.core.content.ContextCompat.getSystemService
 import androidx.navigation.NavHostController
 import com.example.materialfilejetpackcompose.ViewModel.FileViewModel
-import com.example.materialfilejetpackcompose.ViewModel.SortType
 import java.io.File
 
 class HomePageView(private val navController: NavHostController, private val fileViewModel: FileViewModel) {
@@ -69,12 +76,10 @@ class HomePageView(private val navController: NavHostController, private val fil
         var fileInfo: String by remember { mutableStateOf("") }
         var shouldShowRenameDialog by remember { mutableStateOf(false) }
         var oldFile by remember { mutableStateOf<File?>(null) }
-        var isExternalStorage by remember { mutableStateOf(false) }
+        var externalDevices by remember { mutableStateOf<List<StorageVolume>>(emptyList()) }
 
         Surface {
             val focusManager = LocalFocusManager.current
-            var selectedStorage by remember { mutableStateOf("Internal") }
-
             Column(
                 Modifier
                     .fillMaxHeight()
@@ -99,29 +104,36 @@ class HomePageView(private val navController: NavHostController, private val fil
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onPrimary
                 )
-
                 Column {
                     DrawerItem(Icons.Default.Folder, "All Files", isExpanded) {
                         val homeDir = fileViewModel.getHomeDirectory()
+                        fileViewModel.directoryStack.clear()
                         fileViewModel.loadStorage(homeDir)
                     }
                     DrawerItem(Icons.Default.Photo, "Photos", isExpanded) {
                         fileViewModel.currentDirectory.value?.let {
+                            fileViewModel.directoryStack.clear()
                             fileViewModel.loadPhotosOnly(it)
                         }
                     }
                     DrawerItem(Icons.Default.VideoLibrary, "Videos", isExpanded) {
                         fileViewModel.currentDirectory.value?.let {
+                            fileViewModel.directoryStack.clear()
                             fileViewModel.loadVideosOnly(it)
                         }
                     }
                     DrawerItem(Icons.Default.AudioFile, "Audios", isExpanded) {
                         fileViewModel.currentDirectory.value?.let {
+                            fileViewModel.directoryStack.clear()
                             fileViewModel.loadAudiosOnly(it)
                         }
                     }
-                    DrawerItem(Icons.Default.Usb, "External Storage", isExpanded) {
-                        fileViewModel.loadExternalStorage()
+                    externalDevices = fileViewModel.getExternalStorageDevices()
+                    externalDevices.forEach { storageVolume ->
+                        DrawerItem(Icons.Default.Usb, storageVolume.getDescription(LocalContext.current), isExpanded) {
+                            fileViewModel.directoryStack.clear()
+                            fileViewModel.loadStorage(File(storageVolume.directory?.path ?: fileViewModel.getHomeDirectory().path))
+                        }
                     }
                 }
                 DrawerItem(Icons.Default.Settings, "Settings", isExpanded) {
@@ -262,20 +274,6 @@ class HomePageView(private val navController: NavHostController, private val fil
             }
             Text(text = text)
         }
-    }
-    @Composable
-    fun StorageSwitch(isExternalStorage: MutableState<Boolean>, fileViewModel: FileViewModel) {
-        Switch(
-            checked = isExternalStorage.value,
-            onCheckedChange = { isChecked ->
-                isExternalStorage.value = isChecked
-                if (isChecked) {
-                    fileViewModel.loadExternalStorage()
-                } else {
-                    fileViewModel.loadStorage(fileViewModel.getHomeDirectory())
-                }
-            }
-        )
     }
 
     @Composable

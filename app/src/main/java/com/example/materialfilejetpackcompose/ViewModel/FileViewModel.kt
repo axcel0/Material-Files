@@ -1,13 +1,17 @@
 package com.example.materialfilejetpackcompose.ViewModel
 
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
 import android.net.Uri
 import android.os.Environment
 import android.os.storage.StorageManager
+import android.os.storage.StorageVolume
 import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -33,7 +37,7 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
     private val _currentDirectory: MutableLiveData<File> = MutableLiveData()
     val currentDirectory: LiveData<File> = _currentDirectory
 
-    private val directoryStack = Stack<File>()
+    var directoryStack = Stack<File>()
 
     private val _currentPath: MutableLiveData<String> = MutableLiveData("/")
     val currentPath: LiveData<String> = _currentPath
@@ -46,6 +50,33 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
     var isCopying = false
 
     private var searchHistories = mutableListOf<String>()
+
+    val externalDevices = MutableLiveData<List<StorageVolume>>()
+    private val externalStorageReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            when (intent.action) {
+                Intent.ACTION_MEDIA_MOUNTED, Intent.ACTION_MEDIA_UNMOUNTED -> {
+                    // Refresh the list of external devices
+                    externalDevices.value = getExternalStorageDevices()
+                }
+            }
+        }
+    }
+
+    init {
+        // Register the broadcast receiver
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_MEDIA_MOUNTED)
+            addAction(Intent.ACTION_MEDIA_UNMOUNTED)
+            // Note: The data scheme must be set to "file" for these intents
+            addDataScheme("file")
+        }
+        appContext.registerReceiver(externalStorageReceiver, filter)
+    }
+
+    fun cleanup() {
+        appContext.unregisterReceiver(externalStorageReceiver)
+    }
 
     fun loadStorage(directory: File? = null) {
         val path = directory?.absolutePath
@@ -62,32 +93,11 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
         }
         (currentDirectory as MutableLiveData).postValue(directory)
         selectedFiles.value = emptySet()
-
     }
 
-    fun loadExternalStorage() {
-        val filteredFiles = mutableListOf<File>()
-        val externalFilesDirs = appContext.getExternalFilesDirs(null)
-        for (externalFilesDir in externalFilesDirs) {
-            if (externalFilesDir != null) {
-                filteredFiles.addAll(externalFilesDir.listFiles()?.toList() ?: emptyList())
-            }
-        }
-
-        // Add USB drives
+    fun getExternalStorageDevices(): List<StorageVolume> {
         val storageManager = appContext.getSystemService(Context.STORAGE_SERVICE) as StorageManager
-        val storageVolumes = storageManager.storageVolumes
-        for (storageVolume in storageVolumes) {
-            if (storageVolume.isRemovable) {
-                val usbRoot = storageVolume.directory
-                if (usbRoot != null) {
-                    filteredFiles.addAll(usbRoot.listFiles()?.toList() ?: emptyList())
-                }
-            }
-        }
-
-        (files as MutableLiveData).postValue(filteredFiles)
-        selectedFiles.value = emptySet()
+        return storageManager.storageVolumes.filter { it.isRemovable }
     }
 
     fun checkExternalStorage(): Boolean {
@@ -203,7 +213,7 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
         selectedFiles.value = mutableSelectedFiles
     }
 
-    fun clearSelectedFiles() {
+    private fun clearSelectedFiles() {
         selectedFiles.value = emptySet()
     }
 

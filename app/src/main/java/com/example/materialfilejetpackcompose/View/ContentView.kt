@@ -3,7 +3,6 @@ package com.example.materialfilejetpackcompose.View
 import android.content.Context
 import android.graphics.Bitmap
 import android.media.MediaMetadataRetriever
-import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -23,7 +22,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Colors
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
@@ -34,6 +32,7 @@ import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.ViewModule
 import androidx.compose.material3.Checkbox
@@ -46,6 +45,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
@@ -73,75 +73,109 @@ class ContentView(private val fileViewModel: FileViewModel) {
         val currentDirectory by fileViewModel.currentDirectory.observeAsState()
 
         Column(
-            modifier =Modifier.background(MaterialTheme.colorScheme.background)
+            modifier = Modifier.background(MaterialTheme.colorScheme.background)
         ) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Start
             ) {
-                Text(
-                    text = currentDirectory?.path ?: "",
-                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold, color = Color.Black),
-                    modifier = Modifier
-                        .padding(top = 16.dp, bottom = 16.dp)
-                        .background(MaterialTheme.colorScheme.onPrimaryContainer, shape = RoundedCornerShape(8.dp))
-                        .padding(8.dp)
-                )
-                var isSortExpanded by remember { mutableStateOf(false) }
-                Box {
-                    IconButton(onClick = { isSortExpanded = true }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Sort,
-                            contentDescription = "Sort"
-                        )
-                    }
-                    DropdownMenu(
-                        expanded = isSortExpanded,
-                        onDismissRequest = { isSortExpanded = false }
-                    ) {
-                        val list =
-                        listOf(
-                            "Sort by name",
-                            "Sort by date",
-                            "Sort by size",
-                            "Sort by directory"
-                        )
-                        list.forEach { item ->
-                            DropdownMenuItem(
-                                text = { Text(item) },
+                val pathComponents = currentDirectory?.path?.split("/") ?: listOf()
+                Row {
+                    pathComponents.forEachIndexed { index, component ->
+                        val isHomeDir = pathComponents.getOrNull(index + 2) == "0"
+                        if (isHomeDir) {
+                            TextButton(
                                 onClick = {
-                                    isSortExpanded = false
-                                    when (item) {
-                                        "Sort by name" -> sortType = SortType.NAME
-                                        "Sort by date" -> sortType = SortType.DATE
-                                        "Sort by size" -> sortType = SortType.SIZE
-                                        "Sort by directory" -> sortType = SortType.TYPE
-                                    }
+                                    val newPath = pathComponents.subList(0, index + 3).joinToString("/")
+                                    fileViewModel.loadStorage(File(newPath))
                                 }
-                            )
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Home,
+                                    contentDescription = "Home Directory",
+                                    modifier = Modifier.padding(end = 4.dp)
+                                )
+                                Text(
+                                    text = if (index < pathComponents.size - 3) "Home >" else "Home",
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        } else if (index > 3) {
+                            TextButton(
+                                onClick = {
+                                    val newPath = pathComponents.subList(0, index + 1).joinToString("/")
+                                    fileViewModel.loadStorage(File(newPath))
+                                }
+                            ) {
+                                Text(
+                                    text = if (index != pathComponents.size - 1) "$component >" else component,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
                 }
 
-                IconButton(
-                    onClick = { isAscending = !isAscending }
+                var isSortExpanded by remember { mutableStateOf(false) }
+                Row (
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
                 ) {
-                    Icon(
-                        imageVector = if (isAscending) Icons.Default.ArrowDownward else Icons.Default.ArrowUpward,
-                        contentDescription = if (isAscending) "Ascending" else "Descending"
-                    )
-                }
+                    Box {
+                        IconButton(onClick = { isSortExpanded = true }) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.Sort,
+                                contentDescription = "Sort"
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = isSortExpanded,
+                            onDismissRequest = { isSortExpanded = false }
+                        ) {
+                            val list =
+                                listOf(
+                                    "Sort by name",
+                                    "Sort by date",
+                                    "Sort by size",
+                                    "Sort by directory"
+                                )
+                            list.forEach { item ->
+                                DropdownMenuItem(
+                                    text = { Text(item) },
+                                    onClick = {
+                                        isSortExpanded = false
+                                        when (item) {
+                                            "Sort by name" -> sortType = SortType.NAME
+                                            "Sort by date" -> sortType = SortType.DATE
+                                            "Sort by size" -> sortType = SortType.SIZE
+                                            "Sort by directory" -> sortType = SortType.TYPE
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
 
-                IconButton(
-                    onClick = { isGridView = !isGridView }
-                ) {
-                    Icon(
-                        imageVector = if (isGridView) Icons.AutoMirrored.Filled.ViewList else Icons.Filled.ViewModule,
-                        contentDescription = if (isGridView) "Grid View" else "List View"
-                    )
+                    IconButton(
+                        onClick = { isAscending = !isAscending }
+                    ) {
+                        Icon(
+                            imageVector = if (isAscending) Icons.Default.ArrowDownward else Icons.Default.ArrowUpward,
+                            contentDescription = if (isAscending) "Ascending" else "Descending"
+                        )
+                    }
+
+                    IconButton(
+                        onClick = { isGridView = !isGridView }
+                    ) {
+                        Icon(
+                            imageVector = if (isGridView) Icons.AutoMirrored.Filled.ViewList else Icons.Filled.ViewModule,
+                            contentDescription = if (isGridView) "Grid View" else "List View"
+                        )
+                    }
                 }
             }
+
 
             if (isGridView) {
                 LazyVerticalGrid(
@@ -149,6 +183,9 @@ class ContentView(private val fileViewModel: FileViewModel) {
                     modifier = Modifier.padding(16.dp)
                 ) {
                     var sortedFiles : List<File>
+                    if (files == null){
+                        fileViewModel.loadStorage(fileViewModel.getHomeDirectory())
+                    }
                     sortedFiles = when (sortType) {
                         SortType.NAME -> { files!!.sortedBy { it.name } }
                         SortType.DATE -> { files!!.sortedBy { it.lastModified() } }
@@ -165,6 +202,9 @@ class ContentView(private val fileViewModel: FileViewModel) {
                     modifier = Modifier.fillMaxSize()
                 ) {
                     var sortedFiles : List<File>
+                    if (files == null){
+                        fileViewModel.loadStorage(fileViewModel.getHomeDirectory())
+                    }
                     sortedFiles = when (sortType) {
                         SortType.NAME -> { files!!.sortedBy { it.name } }
                         SortType.DATE -> { files!!.sortedBy { it.lastModified() } }
@@ -213,7 +253,6 @@ class ContentView(private val fileViewModel: FileViewModel) {
                             modifier = if (isGridView) Modifier.size(56.dp) else Modifier.size(24.dp),
                             tint = Color(0xFFFFA400)
                         )
-                        Log.d("File", file.name)
                     }
                     fileViewModel.isFilePhoto(file) -> {
                         Image(
@@ -258,7 +297,10 @@ class ContentView(private val fileViewModel: FileViewModel) {
                     if (selectedFiles!!.isEmpty()) {
                         if (file.isDirectory) {
                             fileViewModel.loadStorage(file)
-                        } else if (fileViewModel.isFilePhoto(file) || fileViewModel.isFileAudio(file) || fileViewModel.isFileVideo(file)) {
+                        } else if (fileViewModel.isFilePhoto(file) || fileViewModel.isFileAudio(file) || fileViewModel.isFileVideo(
+                                file
+                            )
+                        ) {
                             fileViewModel.openMediaFile(file)
                         }
                     } else {

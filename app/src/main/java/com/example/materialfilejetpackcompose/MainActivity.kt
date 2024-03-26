@@ -1,11 +1,17 @@
 package com.example.materialfilejetpackcompose
 
+import android.app.Activity
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.focusable
@@ -14,16 +20,19 @@ import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -69,6 +78,16 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
+//            HandleRequestPersimmon()
+//            val context = LocalContext.current
+//            LaunchedEffect(Unit) {
+//                if (!Environment.isExternalStorageManager()) {
+//                    val intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION).apply {
+//                        data = Uri.parse("package:${context.packageName}")
+//                    }
+//                    startActivity(intent)
+//                }
+//            }
             val isSystemInDarkTheme = isSystemInDarkTheme()
             var isDarkTheme by remember {
                 mutableStateOf(sharedPreferences.getBoolean(DARK_MODE_PREF, isSystemInDarkTheme))
@@ -125,6 +144,29 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+    @Composable
+    private fun HandleRequestPersimmon() {
+        val context = LocalContext.current
+        val intent = remember {
+            Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION).apply {
+                data = Uri.parse("package:${context.packageName}")
+            }
+        }
+
+        val launcher = rememberLauncherForActivityResult(contract = ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                // Permission is granted. You can perform your function here.
+            } else {
+                // Permission is denied. You can handle the denial here.
+            }
+        }
+
+        SideEffect {
+            if (!Environment.isExternalStorageManager()) {
+                launcher.launch(intent)
+            }
+        }
+    }
 
     @Composable
     fun ExitAlertDialog(
@@ -165,64 +207,7 @@ class MainActivity : ComponentActivity() {
             }
         )
     }
-    @OptIn(ExperimentalPermissionsApi::class)
-    @Composable
-    private fun HandleRequestPersimmon() {
-        val storagePermissionState = rememberPermissionState(android.Manifest.permission.READ_EXTERNAL_STORAGE)
-
-        LaunchedEffect(storagePermissionState) {
-            storagePermissionState.launchPermissionRequest()
-        }
-
-        when {
-            storagePermissionState.status.isGranted -> {
-                // Permission is granted
-            }
-            storagePermissionState.status.shouldShowRationale -> {
-                // Show an explanation to the user
-            }
-            else -> {
-                // Request permission
-            }
-        }
-    }
 
 }
-
-//    @OptIn(ExperimentalTvMaterial3Api::class, ExperimentalFoundationApi::class)
-//    @Composable
-//    fun SidebarContent() {
-//        var presses by remember { mutableIntStateOf(0) }
-//        Column(modifier = Modifier.fillMaxSize()) {
-//            Text(
-//                text = "Sidebar",
-//                textAlign = TextAlign.Center,
-//                modifier = Modifier
-//                    .fillMaxWidth()
-//                    .padding(16.dp)
-//            )
-//            LazyColumn {
-//                items(presses + 1) {
-//                    Row(
-//                        modifier = Modifier.combinedClickable(
-//                            onClick = { presses++ },
-//                            onLongClick = {
-//                                presses = 0
-//                            },
-//
-//                            role = Role.Button,
-//                        )
-//                    ) {
-//                        Text("Item $it")
-//                        IconButton(onClick = {
-//                            presses++
-//                        }) {
-//                            Icon(Icons.Filled.Add, contentDescription = "Add")
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//    }
 
 

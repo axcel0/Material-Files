@@ -3,6 +3,7 @@ package com.example.materialfilejetpackcompose.View
 import android.content.Context
 import android.graphics.Bitmap
 import android.media.MediaMetadataRetriever
+import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -212,6 +213,7 @@ class ContentView(private val fileViewModel: FileViewModel) {
                             modifier = if (isGridView) Modifier.size(56.dp) else Modifier.size(24.dp),
                             tint = Color(0xFFFFA400)
                         )
+                        Log.d("File", file.name)
                     }
                     fileViewModel.isFilePhoto(file) -> {
                         Image(

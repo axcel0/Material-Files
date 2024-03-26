@@ -79,7 +79,6 @@ class HomePageView(private val navController: NavHostController, private val fil
         var externalDevices by remember { mutableStateOf<List<StorageVolume>>(emptyList()) }
 
         Surface {
-            val focusManager = LocalFocusManager.current
             Column(
                 Modifier
                     .fillMaxHeight()
@@ -174,14 +173,17 @@ class HomePageView(private val navController: NavHostController, private val fil
                     }) {
                         Icon(Icons.Default.Search, contentDescription = "Search")
                     }
+
                     Box {
                         IconButton(onClick = {
                             isDropdownMenuVisible = !isDropdownMenuVisible
                         }) {
                             Icon(Icons.Default.MoreVert, contentDescription = "More")
                         }
-
-                        DropdownMenu(expanded = isDropdownMenuVisible, onDismissRequest = {}) {
+                        DropdownMenu(
+                            expanded = isDropdownMenuVisible,
+                            onDismissRequest = { isDropdownMenuVisible = false }
+                        ) {
                             DropdownMenuItem(
                                 text = { Text("New folder") },
                                 onClick = {

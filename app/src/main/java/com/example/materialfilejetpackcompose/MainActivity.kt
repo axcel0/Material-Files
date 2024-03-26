@@ -54,6 +54,7 @@ class MainActivity : ComponentActivity() {
     companion object {
         private const val PREFERENCE_THEME = "preference_theme"
         private const val DARK_MODE_PREF = "dark_mode"
+        private const val SEARCH_HISTORY_PREF = "search_history"
     }
 
     private val sharedPreferences by lazy {
@@ -89,10 +90,16 @@ class MainActivity : ComponentActivity() {
                 sharedPreferences.edit().putBoolean(DARK_MODE_PREF, it).apply()
             }
 
+            val onSearchHistoryChange : () -> Unit = {
+                val searchHistorySet = fileViewModel.searchHistories.value?.toSet()
+                sharedPreferences.edit().putStringSet(SEARCH_HISTORY_PREF, searchHistorySet).apply()
+            }
+
+            val searchHistoryPref = sharedPreferences.getStringSet(SEARCH_HISTORY_PREF, setOf()) ?: setOf()
+
             var isExitDialogShown by remember { mutableStateOf(false) }
             BackHandler {
                 Toast.makeText(this, fileViewModel.directoryStack.size.toString(), Toast.LENGTH_SHORT).show()
-                val currentDirectory = fileViewModel.currentDirectory.value
                 val hasDirStack = fileViewModel.directoryStack.size > 1
                 if (hasDirStack) {
                     fileViewModel.directoryStack.pop()
@@ -101,13 +108,6 @@ class MainActivity : ComponentActivity() {
                 } else {
                     isExitDialogShown = !isExitDialogShown
                 }
-//                val parentFileExists = currentDirectory?.parentFile?.exists() == true
-//
-//                if (!parentFileExists) {
-//                    isExitDialogShown = !isExitDialogShown
-//                } else {
-//                    fileViewModel.loadStorage(currentDirectory!!.parentFile)
-//                }
             }
 
             MaterialFileJetpackComposeTheme(isInDarkTheme = isDarkTheme) {
@@ -123,7 +123,14 @@ class MainActivity : ComponentActivity() {
                         settingsPageView.SettingsPage(isDarkTheme, onDarkModeChange)
                     }
                     composable("search") {
-                        val searchPageView by lazy { SearchPageView(navController, fileViewModel) }
+                        val searchPageView by lazy {
+                            SearchPageView(
+                                navController,
+                                fileViewModel,
+                                searchHistoryPref.toList(),
+                                onSearchHistoryChange
+                            )
+                        }
                         searchPageView.SearchPage()
                     }
                 }

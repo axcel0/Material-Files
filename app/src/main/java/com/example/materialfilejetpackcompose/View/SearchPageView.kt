@@ -54,15 +54,20 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.materialfilejetpackcompose.ViewModel.FileViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
-class SearchPageView(private val navController: NavController, private val fileViewModel: FileViewModel) {
+class SearchPageView(private val navController: NavController,
+                     private val fileViewModel: FileViewModel,
+                     private val searchHistoryPref : List<String>,
+                     private val onSearchValueChanged: () -> Unit) {
 
-    private var searchHistory = mutableListOf<String>()
+    init {
+        fileViewModel.searchHistories.value = searchHistoryPref
+    }
+
     @Composable
     fun SearchPage() {
         var searchQuery by remember { mutableStateOf("") }
-        val onSearchValueChanged = { value: String ->
-            searchQuery = value
-        }
+        val onSearchValueChanged = { value: String -> searchQuery = value }
+
         Column {
             Surface {
                 TopAppBar(
@@ -112,6 +117,7 @@ class SearchPageView(private val navController: NavController, private val fileV
     @Composable
     fun SearchInput(searchQuery:String, onSearchValueChanged: (String) -> Unit){
         val focusManager = LocalFocusManager.current
+        val searchHistories = fileViewModel.searchHistories.observeAsState(emptyList()).value
 
         OutlinedTextField(
             value = searchQuery,
@@ -124,8 +130,11 @@ class SearchPageView(private val navController: NavController, private val fileV
                     focusManager.clearFocus()
                     if (searchQuery.isNotEmpty()) {
                         fileViewModel.searchFiles(searchQuery)
-                        if (!searchHistory.contains(searchQuery)) {
-                            searchHistory.add(searchQuery) // Add the query to the search history
+                        if (!searchHistories.contains(searchQuery)) {
+                            fileViewModel.searchHistories.value = searchHistories.toMutableList().apply {
+                                add(searchQuery)
+                            }
+                            onSearchValueChanged()
                         }
                     }
                 },
@@ -171,19 +180,20 @@ class SearchPageView(private val navController: NavController, private val fileV
 
     @Composable
     fun SearchHistory() {
-        val searchHistorySnapshot by remember {
-            mutableStateOf(searchHistory.toList())
-        }  // Create a copy of the searchHistory
+        val searchHistories = fileViewModel.searchHistories.observeAsState(emptyList()).value
 
         LazyColumn {
-            items(searchHistorySnapshot) { query ->
+            items(searchHistories) { query ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(text = query, color = Color.Gray)
                     IconButton(onClick = {
-                        searchHistory.remove(query) // Remove the query from the original searchHistory
+                        fileViewModel.searchHistories.value = searchHistories.toMutableList().apply {
+                            remove(query)
+                        }
+                        onSearchValueChanged()
                     }) {
                         Icon(imageVector = Icons.Default.Close, contentDescription = "Delete")
                     }

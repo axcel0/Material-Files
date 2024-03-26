@@ -49,7 +49,7 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
     var filesToCopy = MutableLiveData<Set<File>?>(emptySet())
     var isCopying = false
 
-    private var searchHistories = mutableListOf<String>()
+    var searchHistories = MutableLiveData<List<String>>()
 
     val externalDevices = MutableLiveData<List<StorageVolume>>()
     private val externalStorageReceiver = object : BroadcastReceiver() {
@@ -372,7 +372,6 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
         }
         filesInTrash.clear()
     }
-
 
     //endregion File Operations
 }

@@ -15,15 +15,19 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.distinctUntilChanged
 import java.io.File
 import java.io.IOException
 import java.util.Stack
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.Path
+import java.text.DecimalFormat
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.log10
+import kotlin.math.pow
 
 enum class SortType {
     NAME, SIZE, DATE, TYPE
@@ -242,7 +246,14 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
         }, selectedFiles)
     }
 
-    fun deleteFile(file: File) {
+    fun restoreFiles() {
+        filesInTrash.forEach { file ->
+            file.copyTo(File(currentDirectory.value, file.name))
+        }
+        filesInTrash.clear()
+    }
+
+    private fun deleteFile(file: File) {
         Files.deleteIfExists(Paths.get(file.absolutePath))
         loadStorage(currentDirectory.value)
     }
@@ -361,17 +372,29 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
     fun getFileInfo(file: File): String {
         val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
         val lastModified = sdf.format(Date(file.lastModified()))
-        val size = file.length()
+        val size = getReadableFileSize(file.length())
         val type = if (file.isDirectory) "Folder" else "File"
-        return "Type: $type\nSize: $size bytes\nLast Modified: $lastModified"
+        val isReadable = if (file.canRead()) "Yes" else "No"
+        val isWritable = if (file.canWrite()) "Yes" else "No"
+        val isHidden = if (file.isHidden) "Yes" else "No"
+        val content = if (file.isDirectory) "${file.list()?.size} items" else "Not applicable"
+
+        return "Type: $type\nSize: $size\nLast Modified: $lastModified\nReadable: $isReadable\nWritable: $isWritable\nHidden: $isHidden\nContains: $content"
     }
 
-    fun restoreFiles() {
-        filesInTrash.forEach { file ->
-            file.copyTo(File(currentDirectory.value, file.name))
-        }
-        filesInTrash.clear()
+    private fun getReadableFileSize(size: Long): String {
+        if (size <= 0) return "0"
+        val units = arrayOf("B", "KB", "MB", "GB", "TB")
+        val digitGroups = (log10(size.toDouble()) / log10(1024.0)).toInt()
+        return DecimalFormat("#,##0.#").format(size / 1024.0.pow(digitGroups.toDouble())) + " " + units[digitGroups]
     }
+
+    fun cancelOperation() {
+        filesToCopy.value = emptySet()
+        isCopying = false
+        clearSelectedFiles()
+    }
+
 
     //endregion File Operations
 }

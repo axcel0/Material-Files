@@ -75,6 +75,7 @@ class HomePageView(private val navController: NavHostController, private val fil
         var shouldShowFileInfo by remember { mutableStateOf(false) }
         var fileInfo: String by remember { mutableStateOf("") }
         var shouldShowRenameDialog by remember { mutableStateOf(false) }
+        var shouldShowDeleteDialog by remember { mutableStateOf(false) }
         var oldFile by remember { mutableStateOf<File?>(null) }
         var externalDevices by remember { mutableStateOf<List<StorageVolume>>(emptyList()) }
 
@@ -213,6 +214,13 @@ class HomePageView(private val navController: NavHostController, private val fil
                         }) {
                             shouldShowRenameDialog = false
                         }
+                    } else if (shouldShowDeleteDialog) {
+                        DeleteFileDialog(onDelete = {
+                            fileViewModel.deleteFiles()
+                            shouldShowDeleteDialog = false
+                        }) {
+                            shouldShowDeleteDialog = false
+                        }
                     }
                 }
 
@@ -225,9 +233,9 @@ class HomePageView(private val navController: NavHostController, private val fil
                     val isSingleFileSelected = selectedFiles.value!!.count() == 1
 
                     val actions = listOfNotNull(
-                        Pair(Icons.Default.Delete, "Delete") to {
-                            fileViewModel.deleteFiles()
-                        },
+                        if (selectedFiles.value!!.isNotEmpty()) Pair(Icons.Default.Delete, "Delete") to {
+                            shouldShowDeleteDialog = true
+                        } else null,
 
                         if (!ableToPaste) Pair(Icons.Default.ContentCut, "Cut") to {
                             ableToPaste = true
@@ -251,6 +259,10 @@ class HomePageView(private val navController: NavHostController, private val fil
                             oldFile = selectedFiles.value!!.first()
                             shouldShowRenameDialog = true
                         } else null,
+
+                        Pair(Icons.Default.Cancel, "Cancel") to {
+                            fileViewModel.cancelOperation()
+                        }
                     )
 
                     actions.forEach { (iconData, action) ->
@@ -268,6 +280,7 @@ class HomePageView(private val navController: NavHostController, private val fil
             }
         }
     }
+
     @Composable
     fun ActionButton(imageVector: ImageVector, text: String, onClick: () -> Unit) {
         Column {
@@ -404,6 +417,25 @@ class HomePageView(private val navController: NavHostController, private val fil
             confirmButton = {
                 TextButton(onClick = onCancel) {
                     Text("OK")
+                }
+            }
+        )
+    }
+
+    @Composable
+    fun DeleteFileDialog(onDelete: () -> Unit, onCancel: () -> Unit) {
+        AlertDialog(
+            onDismissRequest = onCancel,
+            title = { Text(text = "Delete File", style = MaterialTheme.typography.titleLarge) },
+            text = { Text(text = "Are you sure you want to delete this file?", style = MaterialTheme.typography.bodyMedium) },
+            confirmButton = {
+                TextButton(onClick = onDelete) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onCancel) {
+                    Text("Cancel")
                 }
             }
         )

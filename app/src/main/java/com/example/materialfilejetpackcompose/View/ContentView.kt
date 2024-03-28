@@ -20,7 +20,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ListItem
@@ -48,6 +50,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
@@ -55,6 +58,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.tv.material3.ExperimentalTvMaterial3Api
+import androidx.tv.material3.ImmersiveList
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.example.materialfilejetpackcompose.ViewModel.FileViewModel
@@ -67,7 +72,7 @@ class ContentView(private val fileViewModel: FileViewModel) {
     fun Content() {
         val files by fileViewModel.files.observeAsState(emptyList())
         val context = LocalContext.current
-        var isGridView by remember { mutableStateOf(false) }
+        var isGridView by remember { mutableStateOf(true) }
         var sortType by remember { mutableStateOf(SortType.NAME) }
         var isAscending by remember { mutableStateOf(true) }
         val currentDirectory by fileViewModel.currentDirectory.observeAsState()
@@ -175,52 +180,20 @@ class ContentView(private val fileViewModel: FileViewModel) {
                     }
                 }
             }
-
-
-            if (isGridView) {
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(3),
-                    modifier = Modifier.padding(16.dp)
-                ) {
-                    var sortedFiles : List<File>
-                    if (files == null){
-                        fileViewModel.loadStorage(fileViewModel.getHomeDirectory())
-                    }
-                    sortedFiles = when (sortType) {
-                        SortType.NAME -> { files!!.sortedBy { it.name } }
-                        SortType.DATE -> { files!!.sortedBy { it.lastModified() } }
-                        SortType.SIZE -> { files!!.sortedBy { it.length() } }
-                        SortType.TYPE -> { files!!.sortedBy { it.extension } }
-                    }
-                    if (!isAscending) sortedFiles = sortedFiles.reversed()
-                    items(sortedFiles) { file ->
-                        FileItem(file, context, fileViewModel, isGridView)
-                    }
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    var sortedFiles : List<File>
-                    if (files == null){
-                        fileViewModel.loadStorage(fileViewModel.getHomeDirectory())
-                    }
-                    sortedFiles = when (sortType) {
-                        SortType.NAME -> { files!!.sortedBy { it.name } }
-                        SortType.DATE -> { files!!.sortedBy { it.lastModified() } }
-                        SortType.SIZE -> { files!!.sortedBy { it.length() } }
-                        SortType.TYPE -> { files!!.sortedBy { it.extension } }
-                    }
-                    if (!isAscending) sortedFiles = sortedFiles.reversed()
-                    items(sortedFiles) { file ->
-                        FileItem(file, context, fileViewModel, isGridView)
-                    }
-                }
+            files?.let {
+                GridOrListView(
+                    files = it,
+                    context = context,
+                    fileViewModel = fileViewModel,
+                    isGridView = isGridView,
+                    sortType = sortType,
+                    isAscending = isAscending,
+                )
             }
         }
     }
 
-    @OptIn(ExperimentalFoundationApi::class)
+    @OptIn(ExperimentalFoundationApi::class, ExperimentalTvMaterial3Api::class)
     @Composable
     fun FileItem(file: File, context: Context, fileViewModel: FileViewModel, isGridView: Boolean) {
         val selectedFiles by fileViewModel.selectedFiles.observeAsState(emptySet())
@@ -332,10 +305,58 @@ class ContentView(private val fileViewModel: FileViewModel) {
                         }
                     }
                 )
-
             }
         )
     }
+
+    @Composable
+    fun GridOrListView(
+        files: List<File>,
+        context: Context,
+        fileViewModel: FileViewModel,
+        isGridView: Boolean,
+        sortType: SortType,
+        isAscending: Boolean
+    ) {
+        val refreshKey by remember { mutableIntStateOf(0) }
+        if (isGridView) {
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(3),
+                modifier = Modifier.padding(16.dp),
+                state = rememberLazyGridState(),
+            ) {
+                var sortedFiles : List<File>
+                sortedFiles = when (sortType) {
+                    SortType.NAME -> { files.sortedBy { it.name } }
+                    SortType.DATE -> { files.sortedBy { it.lastModified() } }
+                    SortType.SIZE -> { files.sortedBy { it.length() } }
+                    SortType.TYPE -> { files.sortedBy { it.extension } }
+                }
+                if (!isAscending) sortedFiles = sortedFiles.reversed()
+                items(sortedFiles) { file ->
+                    FileItem(file, context, fileViewModel, isGridView)
+                }
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                state = rememberLazyListState(refreshKey)
+            ) {
+                var sortedFiles : List<File>
+                sortedFiles = when (sortType) {
+                    SortType.NAME -> { files.sortedBy { it.name } }
+                    SortType.DATE -> { files.sortedBy { it.lastModified() } }
+                    SortType.SIZE -> { files.sortedBy { it.length() } }
+                    SortType.TYPE -> { files.sortedBy { it.extension } }
+                }
+                if (!isAscending) sortedFiles = sortedFiles.reversed()
+                items(sortedFiles) { file ->
+                    FileItem(file, context, fileViewModel, isGridView)
+                }
+            }
+        }
+    }
+
     @Composable
     fun rememberVideoThumbnail(filePath: String): Bitmap? {
         val mediaMetadataRetriever = MediaMetadataRetriever()

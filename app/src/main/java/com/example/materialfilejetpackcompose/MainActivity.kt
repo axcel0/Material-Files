@@ -79,6 +79,12 @@ class MainActivity : ComponentActivity() {
             title = it.name
         }
 
+        fileViewModel.selectedFiles.observe(this) {
+            if (it != null) {
+                title = it.size.toString()
+            }
+        }
+
         setContent {
             val isSystemInDarkTheme = isSystemInDarkTheme()
             var isDarkTheme by remember {

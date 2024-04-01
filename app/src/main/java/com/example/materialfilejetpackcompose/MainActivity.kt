@@ -1,5 +1,6 @@
 package com.example.materialfilejetpackcompose
 
+import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
@@ -10,17 +11,32 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -29,8 +45,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -45,9 +63,19 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.accompanist.permissions.shouldShowRationale
-import java.io.File
-import java.util.Stack
+import android.content.pm.PackageInfo
+import android.content.pm.PackageManager
 
+private fun getVersionName(context: Context): String {
+    var versionName = ""
+    try {
+        val packageInfo: PackageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+        versionName = packageInfo.versionName
+    } catch (e: PackageManager.NameNotFoundException) {
+        e.printStackTrace()
+    }
+    return versionName
+}
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 class MainActivity : ComponentActivity() {
 
@@ -138,6 +166,46 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         searchPageView.SearchPage()
+                    }
+                    composable("about") {
+                        val scrollState = rememberScrollState()
+                        val infiniteTransition = rememberInfiniteTransition(label = "")
+                        val scrollAmount by infiniteTransition.animateFloat(
+                            initialValue = 0f,
+                            targetValue = 2000f, // adjust this value based on your content height
+                            animationSpec = infiniteRepeatable(
+                                animation = tween(1000, easing = LinearEasing), // adjust duration based on your preference
+                                repeatMode = RepeatMode.Restart
+                            ), label = ""
+                        )
+
+                        LaunchedEffect(scrollAmount) {
+                            scrollState.animateScrollTo(scrollAmount.toInt())
+                        }
+
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(16.dp)
+                                .verticalScroll(scrollState),
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "This application is developed using Jetpack Compose",
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "Version: ${getVersionName(this@MainActivity)}",
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "Developed by: Axel",
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
                 }
 

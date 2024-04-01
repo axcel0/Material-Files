@@ -78,16 +78,12 @@ class SettingsPageView(private val navController: NavController) {
                             uncheckedTrackColor = Color.LightGray.copy(alpha = 0.3f)
                         )
                     )
+                    Column {
+                        IconButton(onClick = { navController.navigate("about") }) {
+                            Icon(Icons.Filled.Info, contentDescription = "About")
+                        }
+                    }
                 }
-                HorizontalDivider()
-                //make text description for this whole app about material file manager build with jetpack compose
-                Text(text = "About")
-                Icon(
-                    imageVector = Icons.Filled.Info,
-                    contentDescription = "About",
-                    modifier = Modifier
-                        .padding(start = 24.dp, end = 8.dp)
-                )
 
             }
         }

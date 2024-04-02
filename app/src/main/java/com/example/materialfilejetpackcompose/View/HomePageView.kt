@@ -28,6 +28,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -59,7 +60,7 @@ class HomePageView(private val navController: NavHostController, private val fil
             targetValue = if (shouldShowFileCanvasOperation) 200.dp else 0.dp,
             label = ""
         )
-        val selectedFiles = fileViewModel.selectedFiles.observeAsState()
+        val selectedFiles = fileViewModel.selectedFiles.collectAsState()
         var isDropdownMenuVisible by remember { mutableStateOf(false) }
         var shouldShowNewFolderDialog by remember { mutableStateOf(false) }
         val filesToCopy = fileViewModel.filesToCopy.observeAsState()

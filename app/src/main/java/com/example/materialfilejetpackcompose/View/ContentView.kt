@@ -49,6 +49,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.Modifier
@@ -64,6 +65,9 @@ import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.example.materialfilejetpackcompose.ViewModel.FileViewModel
 import com.example.materialfilejetpackcompose.ViewModel.SortType
+import kotlinx.coroutines.coroutineScope
+import okhttp3.internal.notify
+import okhttp3.internal.notifyAll
 import java.io.File
 
 class ContentView(private val fileViewModel: FileViewModel) {
@@ -196,7 +200,7 @@ class ContentView(private val fileViewModel: FileViewModel) {
     @OptIn(ExperimentalFoundationApi::class, ExperimentalTvMaterial3Api::class)
     @Composable
     fun FileItem(file: File, context: Context, fileViewModel: FileViewModel, isGridView: Boolean) {
-        val selectedFiles by fileViewModel.selectedFiles.observeAsState(emptySet())
+        val selectedFiles by fileViewModel.selectedFiles.collectAsState(emptySet())
         var isSelected = selectedFiles!!.contains(file)
         val isDarkMode = isSystemInDarkTheme()
         val maxChars = if (isGridView) 16 else 32
@@ -205,8 +209,11 @@ class ContentView(private val fileViewModel: FileViewModel) {
         } else {
             file.name
         }
+        val refreshKey by remember { mutableIntStateOf(0) }
+
         LaunchedEffect(selectedFiles) {
             isSelected = selectedFiles!!.contains(file)
+            refreshKey.inc()
         }
 
         ListItem(
@@ -267,13 +274,10 @@ class ContentView(private val fileViewModel: FileViewModel) {
             },
             modifier = Modifier
                 .clickable {
-                    if (selectedFiles!!.isEmpty()) {
+                    if (selectedFiles.isNullOrEmpty()) {
                         if (file.isDirectory) {
                             fileViewModel.loadStorage(file)
-                        } else if (fileViewModel.isFilePhoto(file) || fileViewModel.isFileAudio(file) || fileViewModel.isFileVideo(
-                                file
-                            )
-                        ) {
+                        } else if (fileViewModel.isFilePhoto(file) || fileViewModel.isFileAudio(file) || fileViewModel.isFileVideo(file)) {
                             fileViewModel.openMediaFile(file)
                         }
                     } else {

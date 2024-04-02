@@ -10,12 +10,16 @@ import android.net.Uri
 import android.os.Environment
 import android.os.storage.StorageManager
 import android.os.storage.StorageVolume
+import android.webkit.MimeTypeMap
 import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.distinctUntilChanged
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import java.io.File
 import java.io.IOException
 import java.util.Stack
@@ -46,7 +50,7 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
     private val _currentPath: MutableLiveData<String> = MutableLiveData("/")
     val currentPath: LiveData<String> = _currentPath
 
-    var selectedFiles: MutableLiveData<Set<File>?> = MutableLiveData<Set<File>?>(emptySet())
+    var selectedFiles: MutableStateFlow<Set<File>?> = MutableStateFlow(emptySet())
 
     private var filesInTrash = mutableListOf<File>()
 
@@ -80,6 +84,10 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
 
     fun cleanup() {
         appContext.unregisterReceiver(externalStorageReceiver)
+    }
+
+    fun reloadStorage() {
+        loadStorage(currentDirectory.value)
     }
 
     fun loadStorage(directory: File? = null) {
@@ -131,16 +139,22 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
     }
 
     fun openMediaFile(file: File) {
-        val intent = Intent(Intent.ACTION_VIEW)
-        val mimeType: String = when {
-            isFilePhoto(file) -> "image/*"
-            isFileVideo(file) -> "video/*"
-            isFileAudio(file) -> "audio/*"
-            else -> "*/*"
+        if (file.exists() && !file.isDirectory) {
+            try {
+                val intent = Intent(Intent.ACTION_VIEW)
+                val extension = MimeTypeMap.getFileExtensionFromUrl(file.absolutePath)
+                val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
+                intent.setDataAndType(Uri.parse(file.absolutePath), mimeType ?: "*/*")
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                appContext.startActivity(intent)
+            } catch (e: Exception) {
+                // Log the exception or show a user-friendly error message
+                println("Failed to open media file: ${e.message}")
+            }
+        } else {
+            // Log the error or show a user-friendly error message
+            println("File does not exist or is a directory")
         }
-        intent.setDataAndType(Uri.parse(file.absolutePath), mimeType)
-        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-        appContext.startActivity(intent)
     }
 
     //endregion Photos
@@ -215,6 +229,12 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
         val mutableSelectedFiles = selectedFiles.value?.toMutableSet()
         mutableSelectedFiles?.remove(file)
         selectedFiles.value = mutableSelectedFiles
+    }
+
+    fun updateSelectedFiles(files: Set<File>) {
+        viewModelScope.launch {
+            selectedFiles.value = files
+        }
     }
 
     private fun clearSelectedFiles() {

@@ -65,6 +65,7 @@ import com.google.accompanist.permissions.rememberPermissionState
 import com.google.accompanist.permissions.shouldShowRationale
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import androidx.compose.runtime.collectAsState
 
 private fun getVersionName(context: Context): String {
     var versionName = ""
@@ -107,13 +108,11 @@ class MainActivity : ComponentActivity() {
             title = it.name
         }
 
-        fileViewModel.selectedFiles.observe(this) {
-            if (it != null) {
+        setContent {
+            val selectedFiles = fileViewModel.selectedFiles.collectAsState()
+            selectedFiles.value?.let {
                 title = it.size.toString()
             }
-        }
-
-        setContent {
             val isSystemInDarkTheme = isSystemInDarkTheme()
             var isDarkTheme by remember {
                 mutableStateOf(sharedPreferences.getBoolean(DARK_MODE_PREF, isSystemInDarkTheme))

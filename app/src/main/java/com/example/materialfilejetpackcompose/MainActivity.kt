@@ -1,6 +1,8 @@
 package com.example.materialfilejetpackcompose
 
+import android.Manifest
 import android.content.Context
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
@@ -65,7 +67,14 @@ import com.google.accompanist.permissions.rememberPermissionState
 import com.google.accompanist.permissions.shouldShowRationale
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import android.net.Uri
+import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContract
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.materialfilejetpackcompose.ViewModel.PersimmonViewModel
 
 private fun getVersionName(context: Context): String {
     var versionName = ""
@@ -77,7 +86,7 @@ private fun getVersionName(context: Context): String {
     }
     return versionName
 }
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
+
 class MainActivity : ComponentActivity() {
 
     companion object {
@@ -109,6 +118,8 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
+            HandleRequestPersimmon()
+
             val selectedFiles = fileViewModel.selectedFiles.collectAsState()
             selectedFiles.value?.let {
                 title = it.size.toString()
@@ -273,21 +284,30 @@ class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalPermissionsApi::class)
     @Composable
     private fun HandleRequestPersimmon() {
-        val storagePermissionState = rememberPermissionState(android.Manifest.permission.READ_EXTERNAL_STORAGE)
+        val permissionState = rememberPermissionState(Manifest.permission.MANAGE_EXTERNAL_STORAGE)
+        if (Environment.isExternalStorageManager()) return
 
-        LaunchedEffect(storagePermissionState) {
-            storagePermissionState.launchPermissionRequest()
-        }
-
-        when {
-            storagePermissionState.status.isGranted -> {
-                // Permission is granted
-            }
-            storagePermissionState.status.shouldShowRationale -> {
-                // Show an explanation to the user
-            }
-            else -> {
-                // Request permission
+        if (permissionState.status.shouldShowRationale) {
+            AlertDialog(
+                onDismissRequest = { permissionState.launchPermissionRequest() },
+                title = { Text("Permission Request") },
+                text = { Text("This permission is needed to access external storage") },
+                confirmButton = {
+                    Button(
+                        onClick = { permissionState.launchPermissionRequest() }
+                    ) {
+                        Text("OK")
+                    }
+                }
+            )
+        } else {
+            try {
+                val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
+                intent.data = Uri.parse("package:$packageName")
+                startActivity(intent)
+            } catch (e: Exception) {
+                val intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
+                startActivity(intent)
             }
         }
     }

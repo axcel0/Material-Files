@@ -8,20 +8,7 @@
     <uses-feature
         android:name="android.software.leanback"
         android:required="false" />
-    <!-- Add these permissions for the file manager functionality -->
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
-        android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
-        android:maxSdkVersion="32" />
-    <uses-permission android:name="android.permission.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION"
-        android:maxSdkVersion="34" />
-    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO"
-        android:maxSdkVersion="34" />
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"
-        android:maxSdkVersion="34" />
-    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO"
-        android:maxSdkVersion="34" />
-    <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION"
         android:maxSdkVersion="34" />
     <application
         android:allowBackup="true"

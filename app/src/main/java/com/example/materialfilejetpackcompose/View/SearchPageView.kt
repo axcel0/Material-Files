@@ -104,6 +104,8 @@ class SearchPageView(private val navController: NavController,
     fun BackButton() {
         IconButton(
             onClick = {
+                navController.popBackStack()
+                navController.popBackStack()
                 navController.navigate("home")
             },
         ) {

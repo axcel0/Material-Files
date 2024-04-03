@@ -132,7 +132,6 @@ class MainActivity : ComponentActivity() {
 
             var isExitDialogShown by remember { mutableStateOf(false) }
             BackHandler {
-                Toast.makeText(this, fileViewModel.directoryStack.size.toString(), Toast.LENGTH_SHORT).show()
                 val hasDirStack = fileViewModel.directoryStack.size > 1
                 if (hasDirStack) {
                     fileViewModel.directoryStack.pop()

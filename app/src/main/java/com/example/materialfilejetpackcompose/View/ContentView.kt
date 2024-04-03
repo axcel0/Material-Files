@@ -7,6 +7,8 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -38,6 +40,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.ViewModule
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
@@ -53,6 +56,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
@@ -211,12 +215,6 @@ class ContentView(private val fileViewModel: FileViewModel) {
         } else {
             file.name
         }
-        val refreshKey by remember { mutableIntStateOf(0) }
-
-        LaunchedEffect(selectedFiles) {
-            isSelected = selectedFiles!!.contains(file)
-            refreshKey.inc()
-        }
 
         ListItem(
             headlineContent = {
@@ -227,62 +225,99 @@ class ContentView(private val fileViewModel: FileViewModel) {
                 )
             },
             leadingContent =  {
-                when {
-                    file.isDirectory -> {
-                        Icon(
-                            imageVector = Icons.Filled.Folder,
-                            contentDescription = "Folder",
-                            modifier = if (isGridView) Modifier.size(56.dp) else Modifier.size(24.dp),
-                            tint = Color(0xFFFFA400)
+                if (isSelected) {
+                    Checkbox(
+                        checked = true,
+                        onCheckedChange = {
+                        },
+                        modifier = Modifier
+                            .focusable(false)
+                            .scale(if (isGridView) 1.5f else 1.25f)
+                            .padding(if (isGridView) 4.dp else 0.dp)
+                        ,
+
+
+                        enabled = false,
+                        colors = CheckboxDefaults.colors(
+                            disabledCheckedColor = MaterialTheme.colorScheme.primary,
+                            checkmarkColor = MaterialTheme.colorScheme.inversePrimary
                         )
-                    }
-                    fileViewModel.isFilePhoto(file) -> {
-                        Image(
-                            painter = rememberAsyncImagePainter(
-                                model = ImageRequest.Builder(context)
-                                    .data(file)
-                                    .build()
-                            ),
-                            contentDescription = "Photo",
-                            modifier = if (isGridView) Modifier.size(72.dp) else Modifier.size(24.dp)
-                        )
-                    }
-                    fileViewModel.isFileAudio(file) -> {
-                        Icon(
-                            imageVector = Icons.Default.MusicNote,
-                            contentDescription = "Audio",
-                            modifier = if (isGridView) Modifier.size(72.dp) else Modifier.size(24.dp),
-                            tint = Color(0xFF757575)
-                        )
-                    }
-                    fileViewModel.isFileVideo(file) -> {
-                        // Display video thumbnail
-                        val thumbnail = rememberVideoThumbnail(file.path)
-                        Image(
-                            bitmap = thumbnail!!.asImageBitmap(),
-                            contentDescription = "Video Thumbnail",
-                            modifier = if (isGridView) Modifier.size(72.dp) else Modifier.size(24.dp),
-                        )
-                    }
-                    else -> {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.InsertDriveFile,
-                            contentDescription = "File",
-                            modifier = if (isGridView) Modifier.size(72.dp) else Modifier.size(24.dp),
-                            tint = Color(0xFF757575)
-                        )
+
+                    )
+                    return@ListItem
+                }
+                Box(
+                    modifier = Modifier.padding(if (isGridView) 0.dp else 8.dp)
+                ){
+                    when {
+                        file.isDirectory -> {
+                            Icon(
+                                imageVector = Icons.Filled.Folder,
+                                contentDescription = "Folder",
+                                modifier = if (isGridView) Modifier.size(56.dp) else Modifier.size(32.dp),
+                                tint = Color(0xFFFFA400)
+                            )
+                        }
+                        fileViewModel.isFilePhoto(file) -> {
+                            Image(
+                                painter = rememberAsyncImagePainter(
+                                    model = ImageRequest.Builder(context)
+                                        .data(file)
+                                        .build()
+                                ),
+                                contentDescription = "Photo",
+                                modifier = if (isGridView) Modifier.size(72.dp) else Modifier.size(24.dp)
+                            )
+                        }
+                        fileViewModel.isFileAudio(file) -> {
+                            Icon(
+                                imageVector = Icons.Default.MusicNote,
+                                contentDescription = "Audio",
+                                modifier = if (isGridView) Modifier.size(72.dp) else Modifier.size(24.dp),
+                                tint = Color(0xFF757575)
+                            )
+                        }
+                        fileViewModel.isFileVideo(file) -> {
+                            // Display video thumbnail
+                            val thumbnail = rememberVideoThumbnail(file.path)
+                            Image(
+                                bitmap = thumbnail!!.asImageBitmap(),
+                                contentDescription = "Video Thumbnail",
+                                modifier = if (isGridView) Modifier.size(72.dp) else Modifier.size(24.dp),
+                            )
+                        }
+                        else -> {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.InsertDriveFile,
+                                contentDescription = "File",
+                                modifier = if (isGridView) Modifier.size(72.dp) else Modifier.size(24.dp),
+                                tint = Color(0xFF757575)
+                            )
+                        }
                     }
                 }
+
             },
+
             modifier = Modifier
-                .clickable {
-                    if (selectedFiles.isNullOrEmpty()) {
-                        if (file.isDirectory) {
-                            fileViewModel.loadStorage(file)
-                        } else if (fileViewModel.isFilePhoto(file) || fileViewModel.isFileAudio(file) || fileViewModel.isFileVideo(file)) {
-                            fileViewModel.openMediaFile(file)
+                .combinedClickable(
+                    onClick = {
+                        if (selectedFiles.isNullOrEmpty()) {
+                            if (file.isDirectory) {
+                                fileViewModel.loadStorage(file)
+                            } else if (fileViewModel.isFilePhoto(file) || fileViewModel.isFileAudio(file) || fileViewModel.isFileVideo(file)) {
+                                fileViewModel.openMediaFile(file)
+                            }
+                        } else {
+                            isSelected = !isSelected
+                            if (isSelected) {
+                                fileViewModel.addSelectedFile(file)
+                            } else {
+                                fileViewModel.removeSelectedFile(file)
+                            }
                         }
-                    } else {
+                    },
+                    onLongClick = {
                         isSelected = !isSelected
                         if (isSelected) {
                             fileViewModel.addSelectedFile(file)
@@ -290,29 +325,9 @@ class ContentView(private val fileViewModel: FileViewModel) {
                             fileViewModel.removeSelectedFile(file)
                         }
                     }
-                }
-                .background(
-                    if (!isSelected)
-                        Color.Transparent
-                    else if (isDarkMode)
-                        Color(0x33FFFFFF)
-                    else
-                        Color(0x80000000)
                 )
-                .padding(8.dp),
-            trailingContent = {
-                Checkbox(
-                    checked = isSelected,
-                    onCheckedChange = {
-                        if (it) {
-                            fileViewModel.addSelectedFile(file)
-                        } else {
-                            fileViewModel.removeSelectedFile(file)
+                .padding(if (isGridView) 8.dp else 16.dp),
 
-                        }
-                    }
-                )
-            }
         )
     }
 
@@ -341,7 +356,7 @@ class ContentView(private val fileViewModel: FileViewModel) {
                 }
                 if (!isAscending) sortedFiles = sortedFiles.reversed()
                 items(sortedFiles) { file ->
-                    FileItem(file, context, fileViewModel, isGridView, onFileSelected = {}, onFileDeselected = {})
+                    FileItem(file, context, fileViewModel, true, onFileSelected = {}, onFileDeselected = {})
                 }
             }
         } else {

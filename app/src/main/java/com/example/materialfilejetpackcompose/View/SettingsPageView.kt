@@ -39,7 +39,11 @@ class SettingsPageView(private val navController: NavController) {
                 TopAppBar(
                     title = { Text("Settings") },
                     navigationIcon = {
-                        IconButton(onClick = { navController.navigate("home") }) {
+                        IconButton(onClick = {
+                            navController.popBackStack()
+                            navController.popBackStack()
+                            navController.navigate("home")
+                        }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
                         }
                     },

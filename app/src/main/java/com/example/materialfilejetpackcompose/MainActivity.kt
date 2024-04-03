@@ -123,12 +123,13 @@ class MainActivity : ComponentActivity() {
                 sharedPreferences.edit().putBoolean(DARK_MODE_PREF, it).apply()
             }
 
-            val onSearchHistoryChange : () -> Unit = {
-                val searchHistorySet = fileViewModel.searchHistories.value?.toSet()
-                sharedPreferences.edit().putStringSet(SEARCH_HISTORY_PREF, searchHistorySet).apply()
-            }
+            var searchHistoryPref = sharedPreferences.getStringSet(SEARCH_HISTORY_PREF, setOf()) ?: setOf()
 
-            val searchHistoryPref = sharedPreferences.getStringSet(SEARCH_HISTORY_PREF, setOf()) ?: setOf()
+            val onSearchHistoryChange : () -> Unit = {
+                val searchHistorySet = fileViewModel.searchHistories.value!!.toSet()
+                sharedPreferences.edit().putStringSet(SEARCH_HISTORY_PREF, searchHistorySet).apply()
+                searchHistoryPref = searchHistorySet
+            }
 
             var isExitDialogShown by remember { mutableStateOf(false) }
             BackHandler {
@@ -268,6 +269,7 @@ class MainActivity : ComponentActivity() {
             }
         )
     }
+
     @OptIn(ExperimentalPermissionsApi::class)
     @Composable
     private fun HandleRequestPersimmon() {

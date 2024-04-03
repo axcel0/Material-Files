@@ -2,9 +2,14 @@ package com.example.materialfilejetpackcompose.View
 
 import android.graphics.Bitmap
 import android.media.MediaMetadataRetriever
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,6 +31,8 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -35,7 +42,9 @@ import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -51,12 +60,15 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
+import com.example.materialfilejetpackcompose.MainActivity
 import com.example.materialfilejetpackcompose.ViewModel.FileViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.toList
 
 @OptIn(ExperimentalMaterial3Api::class)
 class SearchPageView(private val navController: NavController,
                      private val fileViewModel: FileViewModel,
-                     private val searchHistoryPref : List<String>,
+                     searchHistoryPref : List<String>,
                      private val onSearchValueChanged: () -> Unit) {
 
     init {
@@ -153,6 +165,7 @@ class SearchPageView(private val navController: NavController,
     @Composable
     fun MenuButton() {
         var isMenuVisible by remember { mutableStateOf(false) }
+        var isDialogVisible by remember { mutableStateOf(false) }
         Box {
             IconButton(
                 modifier = Modifier.padding(end = 8.dp),
@@ -172,13 +185,30 @@ class SearchPageView(private val navController: NavController,
             ) {
                 DropdownMenuItem(
                     onClick = {
-//                        isMenuVisible = false
+                        isMenuVisible = false
+                        isDialogVisible = true
                     },
-                    text = { Text("Search History") }
+                    text = { Text("Clear Search History") }
+                )
+            }
+
+            if (isDialogVisible) {
+                ClearSearchHistoryDialog(
+                    title = "Clear Search History",
+                    message = "Are you sure you want to clear the search history?",
+                    onConfirm = {
+                        fileViewModel.searchHistories.value = emptyList()
+                        onSearchValueChanged()
+                        isDialogVisible = false
+                    },
+                    onDismiss = {
+                        isDialogVisible = false
+                    }
                 )
             }
         }
     }
+
 
     @Composable
     fun SearchHistory() {
@@ -289,5 +319,45 @@ class SearchPageView(private val navController: NavController,
         val bitmap = mediaMetadataRetriever.getFrameAtTime(1000, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
         mediaMetadataRetriever.release()
         return bitmap
+    }
+
+    @Composable
+    fun ClearSearchHistoryDialog(
+        title: String,
+        message: String,
+        onConfirm: () -> Unit,
+        onDismiss: () -> Unit
+    ) {
+        AlertDialog(
+            onDismissRequest = onDismiss,
+            title = { Text(title) },
+            text = { Text(message) },
+            confirmButton = {
+                val interactionSource = remember { MutableInteractionSource() }
+                val isFocused = interactionSource.collectIsFocusedAsState()
+                TextButton(
+                    onClick = onConfirm,
+                    modifier = Modifier.focusable(interactionSource = interactionSource),
+                    colors = ButtonDefaults.textButtonColors(
+                        if (isFocused.value) Color.DarkGray else Color.Transparent
+                    )
+                ) {
+                    Text("Clear")
+                }
+            },
+            dismissButton = {
+                val interactionSource = remember { MutableInteractionSource() }
+                val isFocused = interactionSource.collectIsFocusedAsState()
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.focusable(interactionSource = interactionSource),
+                    colors = ButtonDefaults.textButtonColors(
+                        if (isFocused.value) Color.DarkGray else Color.Transparent
+                    )
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }

@@ -89,66 +89,18 @@ class ContentView(private val fileViewModel: FileViewModel) {
                 val pathComponents = currentDirectory?.path?.split("/") ?: listOf()
                 Row {
                     pathComponents.forEachIndexed { index, component ->
-                        val isHomeDir = pathComponents.getOrNull(index + 2) == "0"
-                        val isExternalStorageDir = index > 0 && pathComponents.getOrNull(index - 1) == "storage"
                         val isRootDirectory = index == 0 && component.isEmpty()
+                        if (isRootDirectory) return@forEachIndexed
 
-                        if (!isRootDirectory) {
-                            if (isHomeDir) {
-                                TextButton(
-                                    onClick = {
-                                        val newPath =
-                                            pathComponents.subList(0, index + 3).joinToString("/")
-                                        fileViewModel.loadStorage(File(newPath))
-                                    }
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Home,
-                                        contentDescription = "Home Directory",
-                                        modifier = Modifier.padding(end = 4.dp)
-                                    )
-                                    Text(
-                                        text = if (index < pathComponents.size - 3) "Home >" else "Home",
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            } else if (fileViewModel.isExternalStorage() && isExternalStorageDir) {
-                                TextButton(
-                                    onClick = {
-                                        val newPath =
-                                            pathComponents.subList(0, index + 1).joinToString("/")
-                                        fileViewModel.loadStorage(File(newPath))
-                                    }
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Usb,
-                                        contentDescription = "Storage Directory",
-                                        modifier = Modifier.padding(end = 4.dp)
-                                    )
-                                    Text(
-                                        text =
-                                            if (index != pathComponents.size - 1) {
-                                                "${fileViewModel.loadedExternalDevice} >"
-                                            } else {
-                                                fileViewModel.loadedExternalDevice
-                                            },
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            } else if (index > 2 && fileViewModel.isExternalStorage() || index > 3) {
-                                TextButton(
-                                    onClick = {
-                                        val newPath =
-                                            pathComponents.subList(0, index + 1).joinToString("/")
-                                        fileViewModel.loadStorage(File(newPath))
-                                    }
-                                ) {
-                                    Text(
-                                        text = if (index != pathComponents.size - 1) "$component >" else component,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            }
+                        val isHomeDir = pathComponents.getOrNull(index) == "0"
+                        val isExternalStorageDir = fileViewModel.isExternalStorage() && index > 0 && pathComponents.getOrNull(index - 1) == "storage"
+                        val newPath = getNewPath(pathComponents, index)
+                        val isNormalDirectory = fileViewModel.isExternalStorage() && index > 2 || !fileViewModel.isExternalStorage() && index > 3
+
+                        when {
+                            isHomeDir -> CreateHomeDirButton(pathComponents.subList(0, index + 1).joinToString("/"), index, pathComponents)
+                            isExternalStorageDir -> CreateExternalStorageDirButton(newPath, fileViewModel, index, pathComponents)
+                            isNormalDirectory -> CreateDefaultDirButton(newPath, component, index, pathComponents, fileViewModel)
                         }
                     }
                 }
@@ -409,5 +361,72 @@ class ContentView(private val fileViewModel: FileViewModel) {
         val bitmap = mediaMetadataRetriever.getFrameAtTime(1000, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
         mediaMetadataRetriever.release()
         return bitmap
+    }
+
+    private fun getNewPath(pathComponents: List<String>, index: Int) = pathComponents.subList(0, index + 1).joinToString("/")
+
+    @Composable
+    fun CreateHomeDirButton(
+        newPath: String,
+        index: Int,
+        pathComponents: List<String>
+    ) {
+        TextButton(
+            onClick = { fileViewModel.loadStorage(File(newPath)) }
+        ) {
+            Icon(
+                imageVector = Icons.Default.Home,
+                contentDescription = "Home Directory",
+                modifier = Modifier.padding(end = 4.dp)
+            )
+            Text(
+                text = if (index < pathComponents.size - 1) "Home >" else "Home",
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+
+    @Composable
+    private fun CreateExternalStorageDirButton(
+        newPath: String,
+        fileViewModel: FileViewModel,
+        index: Int,
+        pathComponents: List<String>
+    ) {
+        TextButton(
+            onClick = { fileViewModel.loadStorage(File(newPath)) }
+        ) {
+            Icon(
+                imageVector = Icons.Default.Usb,
+                contentDescription = "Storage Directory",
+                modifier = Modifier.padding(end = 4.dp)
+            )
+            Text(
+                text = if (index != pathComponents.size - 1) {
+                    "${fileViewModel.loadedExternalDevice} >"
+                } else {
+                    fileViewModel.loadedExternalDevice
+                },
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+
+    @Composable
+    private fun CreateDefaultDirButton(
+        newPath: String,
+        component: String,
+        index: Int,
+        pathComponents: List<String>,
+        fileViewModel: FileViewModel
+    ) {
+        TextButton(
+            onClick = { fileViewModel.loadStorage(File(newPath)) }
+        ) {
+            Text(
+                text = if (index != pathComponents.size - 1) "$component >" else component,
+                fontWeight = FontWeight.Bold
+            )
+        }
     }
 }

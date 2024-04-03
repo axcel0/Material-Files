@@ -4,19 +4,14 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.hardware.usb.UsbDevice
-import android.hardware.usb.UsbManager
 import android.net.Uri
-import android.os.Environment
 import android.os.storage.StorageManager
 import android.os.storage.StorageVolume
 import android.webkit.MimeTypeMap
 import android.widget.Toast
-import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.distinctUntilChanged
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -71,6 +66,8 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
         }
     }
 
+    var loadedExternalDevice = String()
+
     init {
         // Register the broadcast receiver
         val filter = IntentFilter().apply {
@@ -84,10 +81,6 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
 
     fun cleanup() {
         appContext.unregisterReceiver(externalStorageReceiver)
-    }
-
-    fun reloadStorage() {
-        loadStorage(currentDirectory.value)
     }
 
     fun loadStorage(directory: File? = null) {
@@ -112,14 +105,8 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
         return storageManager.storageVolumes.filter { it.isRemovable }
     }
 
-    fun checkExternalStorage(): Boolean {
-        val externalFilesDirs = appContext.getExternalFilesDirs(null)
-        for (externalFilesDir in externalFilesDirs) {
-            if (externalFilesDir != null) {
-                return true
-            }
-        }
-        return false
+    fun isExternalStorage(): Boolean {
+        return currentDirectory.value?.absolutePath?.contains("/storage/emulated/0") == false
     }
 
     fun getHomeDirectory(): File {

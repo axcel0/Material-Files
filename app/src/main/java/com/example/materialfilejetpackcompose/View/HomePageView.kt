@@ -42,6 +42,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.example.materialfilejetpackcompose.MainActivity
 import com.example.materialfilejetpackcompose.ViewModel.FileViewModel
 import java.io.File
 
@@ -123,8 +124,10 @@ class HomePageView(private val navController: NavHostController, private val fil
                     }
                     externalDevices = fileViewModel.getExternalStorageDevices()
                     externalDevices.forEach { storageVolume ->
-                        DrawerItem(Icons.Default.Usb, storageVolume.getDescription(LocalContext.current), isExpanded) {
+                        val storageDescription = storageVolume.getDescription(LocalContext.current)
+                        DrawerItem(Icons.Default.Usb, storageDescription, isExpanded) {
                             fileViewModel.directoryStack.clear()
+                            fileViewModel.loadedExternalDevice = storageDescription
                             fileViewModel.loadStorage(File(storageVolume.directory?.path ?: fileViewModel.getHomeDirectory().path))
                         }
                     }
@@ -139,16 +142,10 @@ class HomePageView(private val navController: NavHostController, private val fil
                     .fillMaxHeight()
                     .width(widthAnime)
                     .background(MaterialTheme.colorScheme.background)
-                    .padding(horizontal = 10.dp, vertical = 10.dp)
-//                    .onFocusChanged { focusState ->
-//                        isExpanded = focusState.isFocused
-//                    },
-                        ,
+                    .padding(horizontal = 10.dp, vertical = 10.dp),
                 horizontalAlignment = Alignment.Start,
                 verticalArrangement = Arrangement.SpaceBetween
-            ) {
-
-            }
+            ) {}
 
             CenterAlignedTopAppBar(
                 modifier = Modifier

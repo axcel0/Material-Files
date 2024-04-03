@@ -6,7 +6,6 @@ import android.media.MediaMetadataRetriever
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -25,7 +24,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
@@ -38,6 +36,7 @@ import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Usb
 import androidx.compose.material.icons.filled.ViewModule
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
@@ -51,7 +50,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableIntStateOf
@@ -64,15 +62,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.ExperimentalTvMaterial3Api
-import androidx.tv.material3.ImmersiveList
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.example.materialfilejetpackcompose.ViewModel.FileViewModel
 import com.example.materialfilejetpackcompose.ViewModel.SortType
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
-import okhttp3.internal.notify
-import okhttp3.internal.notifyAll
 import java.io.File
 
 class ContentView(private val fileViewModel: FileViewModel) {
@@ -97,34 +90,64 @@ class ContentView(private val fileViewModel: FileViewModel) {
                 Row {
                     pathComponents.forEachIndexed { index, component ->
                         val isHomeDir = pathComponents.getOrNull(index + 2) == "0"
-                        if (isHomeDir) {
-                            TextButton(
-                                onClick = {
-                                    val newPath = pathComponents.subList(0, index + 3).joinToString("/")
-                                    fileViewModel.loadStorage(File(newPath))
+                        val isExternalStorageDir = index > 0 && pathComponents.getOrNull(index - 1) == "storage"
+                        val isRootDirectory = index == 0 && component.isEmpty()
+
+                        if (!isRootDirectory) {
+                            if (isHomeDir) {
+                                TextButton(
+                                    onClick = {
+                                        val newPath =
+                                            pathComponents.subList(0, index + 3).joinToString("/")
+                                        fileViewModel.loadStorage(File(newPath))
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Home,
+                                        contentDescription = "Home Directory",
+                                        modifier = Modifier.padding(end = 4.dp)
+                                    )
+                                    Text(
+                                        text = if (index < pathComponents.size - 3) "Home >" else "Home",
+                                        fontWeight = FontWeight.Bold
+                                    )
                                 }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Home,
-                                    contentDescription = "Home Directory",
-                                    modifier = Modifier.padding(end = 4.dp)
-                                )
-                                Text(
-                                    text = if (index < pathComponents.size - 3) "Home >" else "Home",
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        } else if (index > 3) {
-                            TextButton(
-                                onClick = {
-                                    val newPath = pathComponents.subList(0, index + 1).joinToString("/")
-                                    fileViewModel.loadStorage(File(newPath))
+                            } else if (fileViewModel.isExternalStorage() && isExternalStorageDir) {
+                                TextButton(
+                                    onClick = {
+                                        val newPath =
+                                            pathComponents.subList(0, index + 1).joinToString("/")
+                                        fileViewModel.loadStorage(File(newPath))
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Usb,
+                                        contentDescription = "Storage Directory",
+                                        modifier = Modifier.padding(end = 4.dp)
+                                    )
+                                    Text(
+                                        text =
+                                            if (index != pathComponents.size - 1) {
+                                                "${fileViewModel.loadedExternalDevice} >"
+                                            } else {
+                                                fileViewModel.loadedExternalDevice
+                                            },
+                                        fontWeight = FontWeight.Bold
+                                    )
                                 }
-                            ) {
-                                Text(
-                                    text = if (index != pathComponents.size - 1) "$component >" else component,
-                                    fontWeight = FontWeight.Bold
-                                )
+                            } else if (index > 2 && fileViewModel.isExternalStorage() || index > 3) {
+                                TextButton(
+                                    onClick = {
+                                        val newPath =
+                                            pathComponents.subList(0, index + 1).joinToString("/")
+                                        fileViewModel.loadStorage(File(newPath))
+                                    }
+                                ) {
+                                    Text(
+                                        text = if (index != pathComponents.size - 1) "$component >" else component,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
                             }
                         }
                     }

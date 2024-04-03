@@ -66,6 +66,7 @@ import coil.request.ImageRequest
 import com.example.materialfilejetpackcompose.ViewModel.FileViewModel
 import com.example.materialfilejetpackcompose.ViewModel.SortType
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import okhttp3.internal.notify
 import okhttp3.internal.notifyAll
 import java.io.File
@@ -199,7 +200,8 @@ class ContentView(private val fileViewModel: FileViewModel) {
 
     @OptIn(ExperimentalFoundationApi::class, ExperimentalTvMaterial3Api::class)
     @Composable
-    fun FileItem(file: File, context: Context, fileViewModel: FileViewModel, isGridView: Boolean) {
+    fun FileItem(file: File, context: Context, fileViewModel: FileViewModel, isGridView: Boolean, onFileSelected: (File) -> Unit,
+                 onFileDeselected: (File) -> Unit) {
         val selectedFiles by fileViewModel.selectedFiles.collectAsState(emptySet())
         var isSelected = selectedFiles!!.contains(file)
         val isDarkMode = isSystemInDarkTheme()
@@ -306,6 +308,7 @@ class ContentView(private val fileViewModel: FileViewModel) {
                             fileViewModel.addSelectedFile(file)
                         } else {
                             fileViewModel.removeSelectedFile(file)
+
                         }
                     }
                 )
@@ -338,7 +341,7 @@ class ContentView(private val fileViewModel: FileViewModel) {
                 }
                 if (!isAscending) sortedFiles = sortedFiles.reversed()
                 items(sortedFiles) { file ->
-                    FileItem(file, context, fileViewModel, isGridView)
+                    FileItem(file, context, fileViewModel, isGridView, onFileSelected = {}, onFileDeselected = {})
                 }
             }
         } else {
@@ -355,7 +358,7 @@ class ContentView(private val fileViewModel: FileViewModel) {
                 }
                 if (!isAscending) sortedFiles = sortedFiles.reversed()
                 items(sortedFiles) { file ->
-                    FileItem(file, context, fileViewModel, isGridView)
+                    FileItem(file, context, fileViewModel, isGridView, onFileSelected = {}, onFileDeselected = {})
                 }
             }
         }

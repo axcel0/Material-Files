@@ -220,7 +220,7 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
     //endregion Search
 
     fun addSelectedFile(file: File) {
-        val mutableSelectedFiles = selectedFiles.value?.toMutableSet()
+        val mutableSelectedFiles = selectedFiles.value?.toMutableSet() ?: mutableSetOf()
         mutableSelectedFiles?.add(file)
         selectedFiles.value = mutableSelectedFiles
     }

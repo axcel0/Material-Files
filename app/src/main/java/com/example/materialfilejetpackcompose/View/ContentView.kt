@@ -55,8 +55,11 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -276,11 +279,22 @@ class ContentView(private val fileViewModel: FileViewModel) {
 
             modifier = Modifier
                 .combinedClickable(
+                    onLongClick = {
+                        isSelected = !isSelected
+                        if (isSelected) {
+                            fileViewModel.addSelectedFile(file)
+                        } else {
+                            fileViewModel.removeSelectedFile(file)
+                        }
+                    },
                     onClick = {
                         if (selectedFiles.isNullOrEmpty()) {
                             if (file.isDirectory) {
                                 fileViewModel.loadStorage(file)
-                            } else if (fileViewModel.isFilePhoto(file) || fileViewModel.isFileAudio(file) || fileViewModel.isFileVideo(file)) {
+                            } else if (fileViewModel.isFilePhoto(file) || fileViewModel.isFileAudio(
+                                    file
+                                ) || fileViewModel.isFileVideo(file)
+                            ) {
                                 fileViewModel.openMediaFile(file)
                             }
                         } else {
@@ -292,16 +306,33 @@ class ContentView(private val fileViewModel: FileViewModel) {
                             }
                         }
                     },
-                    onLongClick = {
-                        isSelected = !isSelected
-                        if (isSelected) {
-                            fileViewModel.addSelectedFile(file)
-                        } else {
-                            fileViewModel.removeSelectedFile(file)
-                        }
-                    }
+
                 )
                 .padding(if (isGridView) 8.dp else 16.dp),
+
+//            trailingContent = {
+//                Checkbox(checked = isSelected, onCheckedChange = {
+//                    isSelected = it
+//                    if (isSelected) {
+//                        fileViewModel.addSelectedFile(file)
+//                    } else {
+//                        fileViewModel.removeSelectedFile(file)
+//                    }
+//                },
+//                        modifier = Modifier
+//                        .focusable(false)
+//                    .scale(if (isGridView) 1.5f else 1.25f)
+//                    .padding(if (isGridView) 4.dp else 0.dp)
+//                    ,
+//
+//
+//                    enabled = false,
+//                    colors = CheckboxDefaults.colors(
+//                        disabledCheckedColor = MaterialTheme.colorScheme.primary,
+//                        checkmarkColor = MaterialTheme.colorScheme.inversePrimary
+//                    )
+//                    )
+//            }
 
         )
     }

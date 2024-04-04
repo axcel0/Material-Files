@@ -1,6 +1,7 @@
 package com.example.materialfilejetpackcompose
 
 import android.Manifest
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.os.Build
@@ -73,8 +74,11 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.materialfilejetpackcompose.ViewModel.PersimmonViewModel
+import com.google.accompanist.permissions.rememberMultiplePermissionsState
+import kotlinx.coroutines.delay
 
 private fun getVersionName(context: Context): String {
     var versionName = ""
@@ -103,6 +107,7 @@ class MainActivity : ComponentActivity() {
         FileViewModelFactory(applicationContext)
     }
 
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -118,7 +123,8 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            HandleRequestPersimmon()
+//            HandleRequestPersimmon()
+            HandleMultiplePermissions()
 
             val selectedFiles = fileViewModel.selectedFiles.collectAsState()
             selectedFiles.value?.let {
@@ -309,6 +315,80 @@ class MainActivity : ComponentActivity() {
                 val intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
                 startActivity(intent)
             }
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    @OptIn(ExperimentalPermissionsApi::class)
+    @Composable
+    fun HandleMultiplePermissions() {
+        val context = LocalContext.current
+        val multiplePermissionsState = rememberMultiplePermissionsState(
+            permissions = listOf(
+                Manifest.permission.READ_EXTERNAL_STORAGE,
+            )
+        )
+
+        LaunchedEffect(multiplePermissionsState) {
+            multiplePermissionsState.launchMultiplePermissionRequest()
+        }
+
+        when {
+            multiplePermissionsState.allPermissionsGranted -> {
+                // All permissions are granted, you can perform your action here
+            }
+            multiplePermissionsState.shouldShowRationale -> {
+                // This is where you explain to the user why your app needs the permissions
+                AlertDialog(
+                    onDismissRequest = { /*TODO*/ },
+                    title = { Text("Permissions needed") },
+                    text = { Text("This app needs access to your storage and media files to function properly.") },
+                    confirmButton = {
+                        TextButton(onClick = { multiplePermissionsState.launchMultiplePermissionRequest() }) {
+                            Text("OK")
+                        }
+                    }
+                )
+            }
+            else -> {
+                // If the user denies the permission request, you can show a message or handle the denial
+                AlertDialog(
+                    onDismissRequest = { /*TODO*/ },
+                    title = { Text("Permissions denied") },
+                    text = { Text("This app needs access to your storage and media files to function properly.") },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            multiplePermissionsState.launchMultiplePermissionRequest()
+                        }) {
+                            Text("OK")
+                        }
+                    }
+                )
+            }
+        }
+    }
+    @Composable
+    fun HandleSelectedPhotosAccess() {
+        val context = LocalContext.current
+        val launcher = rememberLauncherForActivityResult(contract = ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                val uri: Uri? = result.data?.data
+                uri?.let {
+                    val takeFlags: Int = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                    context.contentResolver.takePersistableUriPermission(uri, takeFlags)
+                    Toast.makeText(context, "Permission granted", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+
+        Button(onClick = {
+            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = "image/*"
+            }
+            launcher.launch(intent)
+        }) {
+            Text("Select Photo")
         }
     }
 

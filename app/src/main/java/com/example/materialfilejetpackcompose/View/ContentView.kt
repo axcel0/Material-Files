@@ -64,6 +64,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.tv.foundation.lazy.grid.TvGridCells
+import androidx.tv.foundation.lazy.grid.TvLazyVerticalGrid
+import androidx.tv.foundation.lazy.grid.items
+import androidx.tv.foundation.lazy.grid.rememberTvLazyGridState
+import androidx.tv.foundation.lazy.list.TvLazyColumn
+import androidx.tv.foundation.lazy.list.items
+import androidx.tv.foundation.lazy.list.rememberTvLazyListState
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
@@ -180,7 +187,9 @@ class ContentView(private val fileViewModel: FileViewModel) {
         }
     }
 
-    @OptIn(ExperimentalFoundationApi::class, ExperimentalTvMaterial3Api::class)
+    @OptIn(ExperimentalFoundationApi::class, ExperimentalTvMaterial3Api::class,
+        ExperimentalFoundationApi::class
+    )
     @Composable
     fun FileItem(file: File, context: Context, fileViewModel: FileViewModel, isGridView: Boolean, onFileSelected: (File) -> Unit,
                  onFileDeselected: (File) -> Unit) {
@@ -277,6 +286,7 @@ class ContentView(private val fileViewModel: FileViewModel) {
 
             },
 
+
             modifier = Modifier
                 .combinedClickable(
                     onLongClick = {
@@ -307,7 +317,7 @@ class ContentView(private val fileViewModel: FileViewModel) {
                         }
                     },
 
-                )
+                    )
                 .padding(if (isGridView) 8.dp else 16.dp),
 
 //            trailingContent = {
@@ -348,10 +358,10 @@ class ContentView(private val fileViewModel: FileViewModel) {
     ) {
         val refreshKey by remember { mutableIntStateOf(0) }
         if (isGridView) {
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(3),
-                modifier = Modifier.padding(16.dp),
-                state = rememberLazyGridState(),
+            TvLazyVerticalGrid(
+                columns = TvGridCells.Adaptive(200.dp),
+                modifier = Modifier.padding(16.dp).fillMaxSize(),
+                state = rememberTvLazyGridState(refreshKey),
             ) {
                 var sortedFiles : List<File>
                 sortedFiles = when (sortType) {
@@ -366,9 +376,9 @@ class ContentView(private val fileViewModel: FileViewModel) {
                 }
             }
         } else {
-            LazyColumn(
+            TvLazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                state = rememberLazyListState(refreshKey)
+                state = rememberTvLazyListState(refreshKey)
             ) {
                 var sortedFiles : List<File>
                 sortedFiles = when (sortType) {

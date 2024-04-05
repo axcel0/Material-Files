@@ -325,7 +325,6 @@ class HomePageView(private val navController: NavHostController, private val fil
                     value = folderName,
                     onValueChange = { folderName = it },
                     label = { Text("Folder Name") },
-                    keyboardOptions = KeyboardOptions.Default.copy(imeAction = androidx.compose.ui.text.input.ImeAction.Done),
                     keyboardActions = KeyboardActions(
                         onDone = {
                             focusManager.clearFocus()
@@ -373,7 +372,6 @@ class HomePageView(private val navController: NavHostController, private val fil
                     value = newName,
                     onValueChange = { newName = it },
                     label = { Text("New Name") },
-                    keyboardOptions = KeyboardOptions.Default.copy(imeAction = androidx.compose.ui.text.input.ImeAction.Done),
                     keyboardActions = KeyboardActions(
                         onDone = {
                             focusManager.clearFocus()

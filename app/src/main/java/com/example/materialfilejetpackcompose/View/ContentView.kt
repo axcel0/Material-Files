@@ -3,6 +3,7 @@ package com.example.materialfilejetpackcompose.View
 import android.content.Context
 import android.graphics.Bitmap
 import android.media.MediaMetadataRetriever
+import android.view.KeyEvent
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -24,6 +25,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
@@ -48,11 +50,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItemColors
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.onFocusChanged
@@ -76,6 +81,10 @@ import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.example.materialfilejetpackcompose.ViewModel.FileViewModel
 import com.example.materialfilejetpackcompose.ViewModel.SortType
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.io.File
 
 class ContentView(private val fileViewModel: FileViewModel) {
@@ -202,8 +211,46 @@ class ContentView(private val fileViewModel: FileViewModel) {
         } else {
             file.name
         }
+        val coroutineScope = rememberCoroutineScope()
+        val longPressCycle = 2
+        var pressJob: Job? = null
+        val isLongPress = remember { mutableStateOf(false) }
+
+        val onLongPress = {
+            isSelected = !isSelected
+            if (isSelected) {
+                fileViewModel.addSelectedFile(file)
+            } else {
+                fileViewModel.removeSelectedFile(file)
+            }
+        }
+
+        val onClick = {
+            if (selectedFiles.isNullOrEmpty()) {
+                if (file.isDirectory) {
+                    fileViewModel.loadStorage(file)
+                } else if (fileViewModel.isFilePhoto(file)
+                    || fileViewModel.isFileAudio(file)
+                    || fileViewModel.isFileVideo(file)
+                ) {
+                    fileViewModel.openMediaFile(file)
+                }
+            } else {
+                isSelected = !isSelected
+                if (isSelected) {
+                    fileViewModel.addSelectedFile(file)
+                } else {
+                    fileViewModel.removeSelectedFile(file)
+                }
+            }
+        }
+
+        val isAndroidTV: Boolean = context.packageManager.hasSystemFeature("android.software.leanback")
 
         ListItem(
+            colors = ListItemDefaults.colors(
+                containerColor = MaterialTheme.colorScheme.background,
+            ),
             headlineContent = {
                 Text(
                     text = displayName,
@@ -215,21 +262,16 @@ class ContentView(private val fileViewModel: FileViewModel) {
                 if (isSelected) {
                     Checkbox(
                         checked = true,
-                        onCheckedChange = {
-                        },
+                        onCheckedChange = {},
                         modifier = Modifier
                             .focusable(false)
                             .scale(if (isGridView) 1.5f else 1.25f)
-                            .padding(if (isGridView) 4.dp else 0.dp)
-                        ,
-
-
+                            .padding(if (isGridView) 4.dp else 0.dp),
                         enabled = false,
                         colors = CheckboxDefaults.colors(
                             disabledCheckedColor = MaterialTheme.colorScheme.primary,
                             checkmarkColor = MaterialTheme.colorScheme.inversePrimary
                         )
-
                     )
                     return@ListItem
                 }
@@ -283,41 +325,51 @@ class ContentView(private val fileViewModel: FileViewModel) {
                         }
                     }
                 }
-
             },
 
-
             modifier = Modifier
-                .combinedClickable(
+                .selectable(selected = false, true, null) { }
+                .combinedClickable (
                     onLongClick = {
-                        isSelected = !isSelected
-                        if (isSelected) {
-                            fileViewModel.addSelectedFile(file)
-                        } else {
-                            fileViewModel.removeSelectedFile(file)
-                        }
+                        onLongPress()
                     },
                     onClick = {
-                        if (selectedFiles.isNullOrEmpty()) {
-                            if (file.isDirectory) {
-                                fileViewModel.loadStorage(file)
-                            } else if (fileViewModel.isFilePhoto(file) || fileViewModel.isFileAudio(
-                                    file
-                                ) || fileViewModel.isFileVideo(file)
-                            ) {
-                                fileViewModel.openMediaFile(file)
+                        if (isAndroidTV) return@combinedClickable
+                        onClick()
+                    }
+                )
+                .onKeyEvent { event ->
+                    if (!isAndroidTV) return@onKeyEvent(false)
+                    when (event.nativeKeyEvent.keyCode) {
+                        KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
+                            if (event.nativeKeyEvent.action == KeyEvent.ACTION_UP) {
+                                if (pressJob != null) {
+                                    if (isLongPress.value)
+                                        onLongPress()
+                                    else
+                                        onClick()
+                                    pressJob!!.cancel()
+                                    pressJob = null
+                                } else {
+                                    onClick()
+                                }
+                            } else if (event.nativeKeyEvent.action == KeyEvent.ACTION_DOWN && pressJob == null) {
+                                pressJob = coroutineScope.launch {
+                                    isLongPress.value = false
+                                    for (counter in 0..longPressCycle) {
+                                        if (counter >= longPressCycle) {
+                                            isLongPress.value = true
+                                            break;
+                                        }
+                                        delay(100L)
+                                    }
+                                }
                             }
-                        } else {
-                            isSelected = !isSelected
-                            if (isSelected) {
-                                fileViewModel.addSelectedFile(file)
-                            } else {
-                                fileViewModel.removeSelectedFile(file)
-                            }
+                            true
                         }
-                    },
-
-                    )
+                        else -> false
+                    }
+                }
                 .padding(if (isGridView) 8.dp else 16.dp),
 
 //            trailingContent = {
@@ -343,7 +395,6 @@ class ContentView(private val fileViewModel: FileViewModel) {
 //                    )
 //                    )
 //            }
-
         )
     }
 

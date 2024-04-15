@@ -1,6 +1,7 @@
 package com.example.materialfilejetpackcompose.View
 
 import android.content.Context
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.media.MediaMetadataRetriever
 import android.view.KeyEvent
@@ -69,6 +70,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.PackageManagerCompat
 import androidx.tv.foundation.lazy.grid.TvGridCells
 import androidx.tv.foundation.lazy.grid.TvLazyVerticalGrid
 import androidx.tv.foundation.lazy.grid.items
@@ -245,8 +247,67 @@ class ContentView(private val fileViewModel: FileViewModel) {
             }
         }
 
-        val isAndroidTV: Boolean = context.packageManager.hasSystemFeature("android.software.leanback")
-
+        val isAndroidTV: Boolean = context.packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
+        val clickModifier = if (isAndroidTV) {
+            Modifier.onKeyEvent { event ->
+                when (event.nativeKeyEvent.keyCode) {
+                    KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
+                        if (event.nativeKeyEvent.action == KeyEvent.ACTION_UP) {
+                            if (pressJob != null) {
+                                if (isLongPress.value)
+                                    onLongPress()
+                                else
+                                    onClick()
+                                pressJob!!.cancel()
+                                pressJob = null
+                            } else {
+                                onClick()
+                            }
+                        } else if (event.nativeKeyEvent.action == KeyEvent.ACTION_DOWN && pressJob == null) {
+                            pressJob = coroutineScope.launch {
+                                isLongPress.value = false
+                                for (counter in 0..longPressCycle) {
+                                    if (counter >= longPressCycle) {
+                                        isLongPress.value = true
+                                        break
+                                    }
+                                    delay(100L)
+                                }
+                            }
+                        }
+                        true
+                    }
+                    else -> false
+                }
+            }
+        } else {
+            Modifier.combinedClickable(
+                onLongClick = {
+                    isSelected = !isSelected
+                    if (isSelected) {
+                        fileViewModel.addSelectedFile(file)
+                    } else {
+                        fileViewModel.removeSelectedFile(file)
+                    }
+                },
+                onClick = {
+                    if (selectedFiles.isNullOrEmpty()) {
+                        if (file.isDirectory) {
+                            fileViewModel.loadStorage(file)
+                        } else if (fileViewModel.isFilePhoto(file) || fileViewModel.isFileAudio(file) || fileViewModel.isFileVideo(file)) {
+                            fileViewModel.openMediaFile(file)
+                        }
+                    } else {
+                        isSelected = !isSelected
+                        if (isSelected) {
+                            fileViewModel.addSelectedFile(file)
+                        } else {
+                            fileViewModel.removeSelectedFile(file)
+                        }
+                    }
+                }
+            )
+        }
         ListItem(
             colors = ListItemDefaults.colors(
                 containerColor = MaterialTheme.colorScheme.background,
@@ -329,47 +390,7 @@ class ContentView(private val fileViewModel: FileViewModel) {
 
             modifier = Modifier
                 .selectable(selected = false, true, null) { }
-                .combinedClickable (
-                    onLongClick = {
-                        onLongPress()
-                    },
-                    onClick = {
-                        if (isAndroidTV) return@combinedClickable
-                        onClick()
-                    }
-                )
-                .onKeyEvent { event ->
-                    if (!isAndroidTV) return@onKeyEvent(false)
-                    when (event.nativeKeyEvent.keyCode) {
-                        KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
-                            if (event.nativeKeyEvent.action == KeyEvent.ACTION_UP) {
-                                if (pressJob != null) {
-                                    if (isLongPress.value)
-                                        onLongPress()
-                                    else
-                                        onClick()
-                                    pressJob!!.cancel()
-                                    pressJob = null
-                                } else {
-                                    onClick()
-                                }
-                            } else if (event.nativeKeyEvent.action == KeyEvent.ACTION_DOWN && pressJob == null) {
-                                pressJob = coroutineScope.launch {
-                                    isLongPress.value = false
-                                    for (counter in 0..longPressCycle) {
-                                        if (counter >= longPressCycle) {
-                                            isLongPress.value = true
-                                            break;
-                                        }
-                                        delay(100L)
-                                    }
-                                }
-                            }
-                            true
-                        }
-                        else -> false
-                    }
-                }
+                .then(clickModifier)
                 .padding(if (isGridView) 8.dp else 16.dp),
 
 //            trailingContent = {

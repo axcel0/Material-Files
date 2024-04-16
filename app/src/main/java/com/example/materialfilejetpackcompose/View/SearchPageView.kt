@@ -6,6 +6,8 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -15,6 +17,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -214,20 +217,29 @@ class SearchPageView(private val navController: NavController,
     fun SearchHistory() {
         val searchHistories = fileViewModel.searchHistories.observeAsState(emptyList()).value
 
-        LazyColumn {
+        LazyColumn(
+            modifier = Modifier.background(MaterialTheme.colorScheme.background).fillMaxHeight(),
+        ) {
             items(searchHistories) { query ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(text = query, color = Color.Gray)
+                    Text(
+                        text = query,
+                        color = MaterialTheme.colorScheme.onBackground,
+//                        modifier = Modifier.clickable {
+//                            fileViewModel.searchFiles(query)
+//
+//                        }
+                    )
                     IconButton(onClick = {
                         fileViewModel.searchHistories.value = searchHistories.toMutableList().apply {
                             remove(query)
                         }
                         onSearchValueChanged()
                     }) {
-                        Icon(imageVector = Icons.Default.Close, contentDescription = "Delete")
+                        Icon(imageVector = Icons.Default.Close, contentDescription = "Delete", tint = Color.Gray)
                     }
                 }
             }
@@ -238,9 +250,11 @@ class SearchPageView(private val navController: NavController,
     @Composable
     fun SearchResults() {
         val searchResults by fileViewModel.searchResults.observeAsState(emptyList())
-        val context = LocalContext.current
 
-        LazyColumn {
+        LazyColumn(
+            modifier = Modifier.background(MaterialTheme.colorScheme.background).fillMaxHeight(),
+        
+        ) {
             items(searchResults) { file ->
                 Row(
                     modifier = Modifier
@@ -258,7 +272,10 @@ class SearchPageView(private val navController: NavController,
                                     fileViewModel.openMediaFile(file)
                                 }
                             },
-                            onLongClick = { /* Handle long click if needed */ }
+                            onLongClick = {
+                                // Show the file options
+                                fileViewModel.showFileOptions(file)
+                            }
                         ),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -307,7 +324,7 @@ class SearchPageView(private val navController: NavController,
                         }
                     }
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = file.name)
+                    Text(text = file.name, color = MaterialTheme.colorScheme.onBackground)
                 }
             }
         }

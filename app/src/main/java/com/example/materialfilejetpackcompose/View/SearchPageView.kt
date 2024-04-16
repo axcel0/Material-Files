@@ -273,8 +273,6 @@ class SearchPageView(private val navController: NavController,
                                 }
                             },
                             onLongClick = {
-                                // Show the file options
-                                fileViewModel.showFileOptions(file)
                             }
                         ),
                     verticalAlignment = Alignment.CenterVertically

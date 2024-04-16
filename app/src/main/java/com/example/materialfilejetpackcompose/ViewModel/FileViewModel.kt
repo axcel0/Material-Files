@@ -208,7 +208,7 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
 
     fun addSelectedFile(file: File) {
         val mutableSelectedFiles = selectedFiles.value?.toMutableSet() ?: mutableSetOf()
-        mutableSelectedFiles?.add(file)
+        mutableSelectedFiles.add(file)
         selectedFiles.value = mutableSelectedFiles
     }
 

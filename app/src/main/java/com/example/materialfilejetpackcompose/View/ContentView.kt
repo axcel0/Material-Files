@@ -19,13 +19,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ListItem
@@ -51,7 +44,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItemColors
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -61,16 +53,15 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.PackageManagerCompat
 import androidx.tv.foundation.lazy.grid.TvGridCells
 import androidx.tv.foundation.lazy.grid.TvLazyVerticalGrid
 import androidx.tv.foundation.lazy.grid.items
@@ -78,13 +69,11 @@ import androidx.tv.foundation.lazy.grid.rememberTvLazyGridState
 import androidx.tv.foundation.lazy.list.TvLazyColumn
 import androidx.tv.foundation.lazy.list.items
 import androidx.tv.foundation.lazy.list.rememberTvLazyListState
-import androidx.tv.material3.ExperimentalTvMaterial3Api
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.example.materialfilejetpackcompose.ViewModel.FileViewModel
 import com.example.materialfilejetpackcompose.ViewModel.SortType
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
@@ -198,16 +187,28 @@ class ContentView(private val fileViewModel: FileViewModel) {
         }
     }
 
-    @OptIn(ExperimentalFoundationApi::class, ExperimentalTvMaterial3Api::class,
-        ExperimentalFoundationApi::class
-    )
     @Composable
-    fun FileItem(file: File, context: Context, fileViewModel: FileViewModel, isGridView: Boolean, onFileSelected: (File) -> Unit,
-                 onFileDeselected: (File) -> Unit) {
+    fun getResponsiveMaxChars(isGridView: Boolean): Int {
+        val configuration = LocalConfiguration.current
+        val density = LocalDensity.current
+        val screenWidthDp = configuration.screenWidthDp.dp
+        val screenWidthPx = with(density) { screenWidthDp.toPx() }
+        val charWidthPx = if (isGridView) 10 else 8 // Approximate width of a character in pixels
+        return (screenWidthPx / charWidthPx).toInt()
+    }
+
+    @OptIn(ExperimentalFoundationApi::class, ExperimentalFoundationApi::class)
+    @Composable
+    fun FileItem(
+        file: File,
+        context: Context,
+        fileViewModel: FileViewModel,
+        isGridView: Boolean
+    ) {
         val selectedFiles by fileViewModel.selectedFiles.collectAsState(emptySet())
         var isSelected = selectedFiles!!.contains(file)
-        val isDarkMode = isSystemInDarkTheme()
-        val maxChars = if (isGridView) 16 else 32
+        isSystemInDarkTheme()
+        val maxChars = getResponsiveMaxChars(isGridView)
         val displayName = if (file.name.length > maxChars) {
             file.name.substring(0, maxChars) + "..."
         } else {
@@ -444,7 +445,7 @@ class ContentView(private val fileViewModel: FileViewModel) {
                 }
                 if (!isAscending) sortedFiles = sortedFiles.reversed()
                 items(sortedFiles) { file ->
-                    FileItem(file, context, fileViewModel, true, onFileSelected = {}, onFileDeselected = {})
+                    FileItem(file, context, fileViewModel, true)
                 }
             }
         } else {
@@ -461,7 +462,7 @@ class ContentView(private val fileViewModel: FileViewModel) {
                 }
                 if (!isAscending) sortedFiles = sortedFiles.reversed()
                 items(sortedFiles) { file ->
-                    FileItem(file, context, fileViewModel, isGridView, onFileSelected = {}, onFileDeselected = {})
+                    FileItem(file, context, fileViewModel, isGridView)
                 }
             }
         }

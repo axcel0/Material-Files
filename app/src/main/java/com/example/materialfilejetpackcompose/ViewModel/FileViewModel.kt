@@ -8,12 +8,14 @@ import android.net.Uri
 import android.os.storage.StorageManager
 import android.os.storage.StorageVolume
 import android.webkit.MimeTypeMap
+import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.IOException
@@ -33,6 +35,9 @@ enum class SortType {
 }
 
 class FileViewModel(private val appContext: Context) : ViewModel() {
+
+    private val _progress = MutableStateFlow(0)
+    val progress: StateFlow<Int> = _progress
 
     private val _files: MutableLiveData<List<File>?> = MutableLiveData()
     val files: LiveData<List<File>?> = _files
@@ -229,11 +234,6 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
     }
 
     //region File Operations
-
-    private fun performFileOperation(operation: (Set<File>?) -> Unit, selectedFiles: Set<File>? = null) {
-        operation(selectedFiles)
-    }
-
     fun moveFilesToTrash(selectedFiles: Set<File>? = null) {
         performFileOperation({ files ->
             files?.let {
@@ -258,6 +258,12 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
             file.copyTo(File(currentDirectory.value, file.name))
         }
         filesInTrash.clear()
+    }
+    private fun updateFilesInTrash() {
+        filesInTrash = filesInTrash.distinct().sortedBy { it.name }.toMutableList()
+    }
+    private fun performFileOperation(operation: (Set<File>?) -> Unit, selectedFiles: Set<File>? = null) {
+        operation(selectedFiles)
     }
 
     private fun deleteFile(file: File) {
@@ -289,10 +295,6 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
         }
         loadStorage(currentDirectory.value)
         clearSelectedFiles()
-    }
-
-    private fun updateFilesInTrash() {
-        filesInTrash = filesInTrash.distinct().sortedBy { it.name }.toMutableList()
     }
 
     fun createNewFolder(directory: String, folderName: String) {
@@ -366,6 +368,17 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
         filesToCopy.value = emptySet()
         clearSelectedFiles()
     }
+    private fun getTotalFiles(files: Set<File>): Int {
+        var total = 0
+        for (file in files) {
+            if (file.isDirectory) {
+                total += file.walk().count()
+            } else {
+                total++
+            }
+        }
+        return total
+    }
 
     fun renameFile(oldFile: File, newName: String) {
         val newFile = File(oldFile.parent, newName)
@@ -379,14 +392,30 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
     fun getFileInfo(file: File): String {
         val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
         val lastModified = sdf.format(Date(file.lastModified()))
-        val size = getReadableFileSize(file.length())
-        val type = if (file.isDirectory) "Folder" else "File"
+        val size: Long = if (file.isDirectory) {
+            file.walk().filter { it.isFile }.map { it.length() }.sum()
+        } else {
+            file.length()
+        }
+        val readableSize = getReadableFileSize(size)
+        val type = when {
+            file.isDirectory -> "Folder"
+            isFileVideo(file) -> "Video"
+            isFileAudio(file) -> "Audio"
+            isFilePhoto(file) -> "Photo"
+            else -> "File"
+        }
         val isReadable = if (file.canRead()) "Yes" else "No"
         val isWritable = if (file.canWrite()) "Yes" else "No"
         val isHidden = if (file.isHidden) "Yes" else "No"
-        val content = if (file.isDirectory) "${file.list()?.size} items" else "Not applicable"
+        val content = if (file.isDirectory) {
+            val itemCount = file.list()?.size ?: 0
+            "$itemCount ${if (itemCount <= 1) "item" else "items"}"
+        } else {
+            "Not applicable"
+        }
 
-        return "Type: $type\nSize: $size\nLast Modified: $lastModified\nReadable: $isReadable\nWritable: $isWritable\nHidden: $isHidden\nContains: $content"
+        return "Type: $type\nSize: $readableSize\nLast Modified: $lastModified\nReadable: $isReadable\nWritable: $isWritable\nHidden: $isHidden\nContains: $content"
     }
 
     private fun getReadableFileSize(size: Long): String {

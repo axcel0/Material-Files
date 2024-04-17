@@ -2,7 +2,10 @@ package com.example.materialfilejetpackcompose.View
 
 import android.os.storage.StorageVolume
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateValueAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkOut
@@ -40,6 +43,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.materialfilejetpackcompose.MainActivity
@@ -52,14 +56,14 @@ class HomePageView(private val navController: NavHostController, private val fil
     @Composable
     fun HomePage() {
         var isExpanded by remember { mutableStateOf(false) }
-        var shouldShowFileCanvasOperation by remember { mutableStateOf(false) }
+        val shouldShowFileCanvasOperation by remember { mutableStateOf(false) }
         val widthAnim by animateDpAsState(
             targetValue = if (isExpanded) 200.dp else 50.dp,
-            label = ""
+            animationSpec = tween(durationMillis = 50), label = "anime"
         )
         val widthAnime by animateDpAsState(
             targetValue = if (shouldShowFileCanvasOperation) 200.dp else 0.dp,
-            label = ""
+            animationSpec = tween(durationMillis = 50), label = "anime",
         )
         val selectedFiles = fileViewModel.selectedFiles.collectAsState()
         var isDropdownMenuVisible by remember { mutableStateOf(false) }
@@ -250,9 +254,9 @@ class HomePageView(private val navController: NavHostController, private val fil
                             shouldShowRenameDialog = true
                         } else null,
 
-                        Pair(Icons.Default.Cancel, "Cancel") to {
-                            fileViewModel.cancelOperation()
-                        }
+//                        Pair(Icons.Default.Cancel, "Cancel") to {
+//                            fileViewModel.cancelOperation()
+//                        }
                     )
 
                     actions.forEach { (iconData, action) ->

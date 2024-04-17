@@ -73,6 +73,7 @@ import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -202,24 +203,32 @@ class MainActivity : ComponentActivity() {
                         Column(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(16.dp)
-                                .verticalScroll(scrollState),
+                                .verticalScroll(scrollState)
+                                .background(MaterialTheme.colorScheme.background),
                             verticalArrangement = Arrangement.Center,
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
                                 text = "This application is developed using Jetpack Compose",
-                                textAlign = TextAlign.Center
+                                textAlign = TextAlign.Center,
+                                color = MaterialTheme.colorScheme.onBackground
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
                                 text = "Version: ${getVersionName(this@MainActivity)}",
-                                textAlign = TextAlign.Center
+                                textAlign = TextAlign.Center,
+                                color = MaterialTheme.colorScheme.onBackground
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
                                 text = "Developed by: Axel",
-                                textAlign = TextAlign.Center
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.border(
+                                    width = 1.dp,
+                                    color = Color.Gray,
+                                    shape = RoundedCornerShape(8.dp)
+                                ),
+                                color = MaterialTheme.colorScheme.onBackground
                             )
                         }
                     }
@@ -322,7 +331,7 @@ class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalPermissionsApi::class)
     @Composable
     fun HandleMultiplePermissions() {
-        val context = LocalContext.current
+        LocalContext.current
         val multiplePermissionsState = rememberMultiplePermissionsState(
             permissions = listOf(
                 Manifest.permission.READ_EXTERNAL_STORAGE,

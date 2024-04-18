@@ -1,7 +1,6 @@
 package com.example.materialfilejetpackcompose.View
 
 import android.content.Context
-import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.media.MediaMetadataRetriever
 import android.view.KeyEvent
@@ -79,7 +78,7 @@ import kotlinx.coroutines.launch
 import java.io.File
 
 class ContentView(private val fileViewModel: FileViewModel) {
-
+    private val isAndroidTV: Boolean = fileViewModel.isAndroidTV()
     @Composable
     fun Content() {
         val files by fileViewModel.files.observeAsState(emptyList())
@@ -189,12 +188,16 @@ class ContentView(private val fileViewModel: FileViewModel) {
 
     @Composable
     fun getResponsiveMaxChars(isGridView: Boolean): Int {
-        val configuration = LocalConfiguration.current
-        val density = LocalDensity.current
-        val screenWidthDp = configuration.screenWidthDp.dp
-        val screenWidthPx = with(density) { screenWidthDp.toPx() }
-        val charWidthPx = if (isGridView) 10 else 8 // Approximate width of a character in pixels
-        return (screenWidthPx / charWidthPx).toInt()
+        return if (isAndroidTV) {
+            if (isGridView) 16 else 32
+        } else {
+            val configuration = LocalConfiguration.current
+            val density = LocalDensity.current
+            val screenWidthDp = configuration.screenWidthDp.dp
+            val screenWidthPx = with(density) { screenWidthDp.toPx() }
+            val charWidthPx = if (isGridView) 10 else 8 // Approximate width of a character in pixels
+            (screenWidthPx / charWidthPx).toInt()
+        }
     }
 
     @OptIn(ExperimentalFoundationApi::class, ExperimentalFoundationApi::class)
@@ -248,7 +251,6 @@ class ContentView(private val fileViewModel: FileViewModel) {
             }
         }
 
-        val isAndroidTV: Boolean = context.packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
         val clickModifier = if (isAndroidTV) {
             Modifier.onKeyEvent { event ->
                 when (event.nativeKeyEvent.keyCode) {
@@ -470,11 +472,19 @@ class ContentView(private val fileViewModel: FileViewModel) {
 
     @Composable
     fun rememberVideoThumbnail(filePath: String): Bitmap? {
-        val mediaMetadataRetriever = MediaMetadataRetriever()
-        mediaMetadataRetriever.setDataSource(filePath)
-        val bitmap = mediaMetadataRetriever.getFrameAtTime(1000, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
-        mediaMetadataRetriever.release()
-        return bitmap
+        return remember(filePath) {
+            var bitmap: Bitmap? = null
+            val mediaMetadataRetriever = MediaMetadataRetriever()
+            try {
+                mediaMetadataRetriever.setDataSource(filePath)
+                bitmap = mediaMetadataRetriever.getFrameAtTime(1000, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
+            } catch (e: Exception) {
+                // Handle or log exception
+            } finally {
+                mediaMetadataRetriever.release()
+            }
+            bitmap
+        }
     }
 
     private fun getNewPath(pathComponents: List<String>, index: Int) = pathComponents.subList(0, index + 1).joinToString("/")

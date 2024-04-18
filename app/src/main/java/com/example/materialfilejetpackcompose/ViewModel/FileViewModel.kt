@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.storage.StorageManager
 import android.os.storage.StorageVolume
@@ -86,6 +87,10 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
 
     fun cleanup() {
         appContext.unregisterReceiver(externalStorageReceiver)
+    }
+
+    fun isAndroidTV(): Boolean {
+        return appContext.packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
     }
 
     fun loadStorage(directory: File? = null) {

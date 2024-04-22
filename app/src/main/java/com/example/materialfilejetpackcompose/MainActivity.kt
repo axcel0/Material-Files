@@ -361,18 +361,7 @@ class MainActivity : ComponentActivity() {
             }
             else -> {
                 // If the user denies the permission request, you can show a message or handle the denial
-                AlertDialog(
-                    onDismissRequest = { /*TODO*/ },
-                    title = { Text("Permissions denied") },
-                    text = { Text("This app needs access to your storage and media files to function properly.") },
-                    confirmButton = {
-                        TextButton(onClick = {
-                            multiplePermissionsState.launchMultiplePermissionRequest()
-                        }) {
-                            Text("OK")
-                        }
-                    }
-                )
+
             }
         }
     }

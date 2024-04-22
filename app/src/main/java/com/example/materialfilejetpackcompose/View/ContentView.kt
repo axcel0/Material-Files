@@ -1,6 +1,7 @@
 package com.example.materialfilejetpackcompose.View
 
 import android.content.Context
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.media.MediaMetadataRetriever
 import android.view.KeyEvent
@@ -79,6 +80,7 @@ import java.io.File
 
 class ContentView(private val fileViewModel: FileViewModel) {
     private val isAndroidTV: Boolean = fileViewModel.isAndroidTV()
+    val isPortrait: Boolean = fileViewModel.isPortrait()
     @Composable
     fun Content() {
         val files by fileViewModel.files.observeAsState(emptyList())
@@ -87,6 +89,9 @@ class ContentView(private val fileViewModel: FileViewModel) {
         var sortType by remember { mutableStateOf(SortType.NAME) }
         var isAscending by remember { mutableStateOf(true) }
         val currentDirectory by fileViewModel.currentDirectory.observeAsState()
+        if (!isAndroidTV && isPortrait) {
+            isGridView = false
+        }
 
         Column(
             modifier = Modifier.background(MaterialTheme.colorScheme.background)
@@ -190,6 +195,9 @@ class ContentView(private val fileViewModel: FileViewModel) {
     fun getResponsiveMaxChars(isGridView: Boolean): Int {
         return if (isAndroidTV) {
             if (isGridView) 16 else 32
+        } else if (isPortrait) {
+            if (isGridView) 12 else 24
+
         } else {
             val configuration = LocalConfiguration.current
             val density = LocalDensity.current

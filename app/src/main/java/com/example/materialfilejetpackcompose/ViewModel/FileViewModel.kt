@@ -93,6 +93,10 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
         return appContext.packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
     }
 
+    fun isPortrait(): Boolean {
+        return appContext.resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_PORTRAIT
+    }
+
     fun loadStorage(directory: File? = null) {
         val path = directory?.absolutePath
         directoryStack.push(directory)

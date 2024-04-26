@@ -6,8 +6,11 @@ import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateValueAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.shrinkOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -41,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.Dp
@@ -59,7 +63,7 @@ class HomePageView(private val navController: NavHostController, private val fil
         val shouldShowFileCanvasOperation by remember { mutableStateOf(false) }
         val widthAnim by animateDpAsState(
             targetValue = if (isExpanded) 200.dp else 50.dp,
-            animationSpec = tween(durationMillis = 50), label = "anime"
+            animationSpec = tween(durationMillis = 10), label = "anime"
         )
         val widthAnime by animateDpAsState(
             targetValue = if (shouldShowFileCanvasOperation) 200.dp else 0.dp,
@@ -93,7 +97,7 @@ class HomePageView(private val navController: NavHostController, private val fil
                 Icon(
                     imageVector = if (isExpanded) Icons.Default.Close else Icons.Default.Menu,
                     modifier = Modifier
-                        .padding(top = 10.dp)
+                        .padding(top = 10.dp, bottom = 50.dp)
                         .clickable(
                             onClick = {
                                 isExpanded = !isExpanded
@@ -102,7 +106,12 @@ class HomePageView(private val navController: NavHostController, private val fil
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onPrimary
                 )
-                Column {
+                Column(
+                    Modifier
+                        .width(widthAnim)
+                        .padding(bottom = 50.dp)
+
+                ) {
                     DrawerItem(Icons.Default.Folder, "All Files", isExpanded) {
                         val homeDir = fileViewModel.getHomeDirectory()
                         fileViewModel.directoryStack.clear()
@@ -302,8 +311,8 @@ class HomePageView(private val navController: NavHostController, private val fil
             )
             AnimatedVisibility(
                 visible = expanded,
-                enter = fadeIn(),
-                exit = fadeOut() + shrinkOut()
+                enter = fadeIn() + expandHorizontally{ it} + expandVertically { it },
+                exit = fadeOut()
             ) {
                 Text(
                     text = title,

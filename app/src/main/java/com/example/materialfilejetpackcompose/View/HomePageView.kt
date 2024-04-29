@@ -211,8 +211,8 @@ class HomePageView(private val navController: NavHostController, private val fil
                     val contentView by lazy { ContentView(fileViewModel) }
                     contentView.Content()
                     if (shouldShowRenameDialog && oldFile != null) {
-                        RenameFileDialog(onRename = { newName ->
-                            fileViewModel.renameFile(oldFile!!, newName)
+                        RenameFileDialog(oldFile = oldFile!!, onRename = {
+                            fileViewModel.renameFile(oldFile!!, it)
                             shouldShowRenameDialog = false
                         }) {
                             shouldShowRenameDialog = false
@@ -373,8 +373,8 @@ class HomePageView(private val navController: NavHostController, private val fil
     }
 
     @Composable
-    fun RenameFileDialog(onRename: (String) -> Unit, onCancel: () -> Unit = {}) {
-        var newName by remember { mutableStateOf("") }
+    fun RenameFileDialog(oldFile: File, onRename: (String) -> Unit, onCancel: () -> Unit = {}) {
+        var newName by remember { mutableStateOf("${oldFile.nameWithoutExtension}.${oldFile.extension}") }
         val focusManager = LocalFocusManager.current
 
         AlertDialog(
@@ -389,6 +389,7 @@ class HomePageView(private val navController: NavHostController, private val fil
                         onDone = {
                             focusManager.clearFocus()
                             onRename(newName)
+                            fileViewModel.renameFile(oldFile, newName)
                         }
                     ),
                     modifier = Modifier
@@ -402,7 +403,10 @@ class HomePageView(private val navController: NavHostController, private val fil
                 }
             },
             dismissButton = {
-                TextButton(onClick = { onRename(newName) }) {
+                TextButton(onClick = {
+                    onRename(newName)
+                    fileViewModel.renameFile(oldFile, newName)
+                }) {
                     Text("Rename")
                 }
             }

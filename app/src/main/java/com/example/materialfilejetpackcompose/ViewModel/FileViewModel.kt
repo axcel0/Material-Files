@@ -5,6 +5,9 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.media.MediaExtractor
+import android.media.MediaFormat
+import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.storage.StorageManager
 import android.os.storage.StorageVolume
@@ -24,6 +27,7 @@ import java.util.Stack
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.Path
+import java.nio.file.StandardCopyOption
 import java.text.DecimalFormat
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -161,21 +165,21 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
     //endregion Photos
 
     fun loadVideosOnly(directory: File? = null) {
-        val videoExtensions = listOf("mp4", "avi", "flv", "mov")
+        val videoExtensions = listOf("mp4", "avi", "flv", "mov", "mkv")
         loadAllFilesWithExtensions(directory, videoExtensions)
     }
     fun isFileVideo(file: File): Boolean {
-        val videoExtensions = listOf("mp4", "avi", "flv", "mov")
+        val videoExtensions = listOf("mp4", "avi", "flv", "mov", "mkv")
         return videoExtensions.contains(file.extension.lowercase(Locale.ROOT))
     }
 
     fun loadAudiosOnly(directory: File? = null) {
-        val audioExtensions = listOf("mp3", "wav", "ogg", "flac")
+        val audioExtensions = listOf("mp3", "wav", "ogg", "flac", "aac")
         loadAllFilesWithExtensions(directory, audioExtensions)
     }
 
     fun isFileAudio(file: File): Boolean {
-        val audioExtensions = listOf("mp3", "wav", "aac", "flac")
+        val audioExtensions = listOf("mp3", "wav", "aac", "flac", "ogg")
         return audioExtensions.contains(file.extension.lowercase(Locale.ROOT))
     }
 
@@ -389,13 +393,33 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
         return total
     }
 
-    fun renameFile(oldFile: File, newName: String) {
-        val newFile = File(oldFile.parent, newName)
-        if (oldFile.renameTo(newFile)) {
-            loadStorage(currentDirectory.value)
+    fun renameFile(oldFile: File, newName: String): String {
+        val oldFileName = if (oldFile.isDirectory) {
+            oldFile.nameWithoutExtension.trimEnd('.')
         } else {
-            Toast.makeText(appContext, "Failed to rename file", Toast.LENGTH_SHORT).show()
+            "${oldFile.nameWithoutExtension.trimEnd('.')}.${oldFile.extension}"
         }
+
+        if (oldFile.isDirectory) {
+            val trimmedName = newName.trimEnd('.')
+            val newFile = File(oldFile.parent, trimmedName)
+            if (oldFile.renameTo(newFile)) {
+                loadStorage(currentDirectory.value)
+            } else {
+                Toast.makeText(appContext, "Failed to rename directory", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            val nameParts = newName.split(".")
+            val newExtension = if (nameParts.size > 1) nameParts.last() else oldFile.extension
+            val newFileName = if (nameParts.size > 1) nameParts.dropLast(1).joinToString(".") else newName
+            val newFile = File(oldFile.parent, "$newFileName.$newExtension")
+            if (oldFile.renameTo(newFile)) {
+                loadStorage(currentDirectory.value)
+            } else {
+                Toast.makeText(appContext, "Failed to rename file", Toast.LENGTH_SHORT).show()
+            }
+        }
+        return oldFileName
     }
 
     fun getFileInfo(file: File): String {
@@ -407,6 +431,7 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
             file.length()
         }
         val readableSize = getReadableFileSize(size)
+        val format = file.extension
         val type = when {
             file.isDirectory -> "Folder"
             isFileVideo(file) -> "Video"
@@ -423,8 +448,26 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
         } else {
             "Not applicable"
         }
+        val codec = when {
+            isFileVideo(file) || isFileAudio(file) -> getMediaCodec(file)
+            isFilePhoto(file) -> format
+            else -> "Not applicable"
+        }
 
-        return "Type: $type\nSize: $readableSize\nLast Modified: $lastModified\nReadable: $isReadable\nWritable: $isWritable\nHidden: $isHidden\nContains: $content"
+        return "Type: $type\nFormat: $format\nSize: $readableSize\nLast Modified: $lastModified\nReadable: $isReadable\nWritable: $isWritable\nHidden: $isHidden\nContains: $content\nCodec: $codec"
+    }
+
+    private fun getMediaCodec(file: File): String {
+        val extractor = MediaExtractor()
+        extractor.setDataSource(file.absolutePath)
+        val format = extractor.getTrackFormat(0)
+        val codec = format.getString(MediaFormat.KEY_MIME)?.substringAfter("/")
+        extractor.release()
+        return when (codec) {
+            "avc" -> "H.264/AVC"
+            "hevc" -> "H.265/HEVC"
+            else -> codec ?: "Unknown"
+        }
     }
 
     private fun getReadableFileSize(size: Long): String {

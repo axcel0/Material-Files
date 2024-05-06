@@ -489,7 +489,7 @@ class ContentView(private val fileViewModel: FileViewModel) {
                 mediaMetadataRetriever.setDataSource(filePath)
                 bitmap = mediaMetadataRetriever.getFrameAtTime(1000, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
             } catch (e: Exception) {
-                // Handle or log exception
+                Log.e("ContentView", "Failed to retrieve video thumbnail", e)
             } finally {
                 mediaMetadataRetriever.release()
             }

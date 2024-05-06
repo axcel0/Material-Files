@@ -394,15 +394,10 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
     }
 
     fun renameFile(oldFile: File, newName: String): String {
-        val oldFileName = if (oldFile.isDirectory) {
-            oldFile.nameWithoutExtension.trimEnd('.')
-        } else {
-            "${oldFile.nameWithoutExtension.trimEnd('.')}.${oldFile.extension}"
-        }
+        val oldFileName = oldFile.name
 
         if (oldFile.isDirectory) {
-            val trimmedName = newName.trimEnd('.')
-            val newFile = File(oldFile.parent, trimmedName)
+            val newFile = File(oldFile.parent, newName)
             if (oldFile.renameTo(newFile)) {
                 loadStorage(currentDirectory.value)
             } else {

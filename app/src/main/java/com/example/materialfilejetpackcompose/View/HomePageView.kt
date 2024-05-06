@@ -374,7 +374,15 @@ class HomePageView(private val navController: NavHostController, private val fil
 
     @Composable
     fun RenameFileDialog(oldFile: File, onRename: (String) -> Unit, onCancel: () -> Unit = {}) {
-        var newName by remember { mutableStateOf("${oldFile.nameWithoutExtension}.${oldFile.extension}") }
+        var newName by remember {
+            mutableStateOf(
+                if (oldFile.isDirectory) {
+                    oldFile.nameWithoutExtension
+                } else {
+                    "${oldFile.nameWithoutExtension}.${oldFile.extension}"
+                }
+            )
+        }
         val focusManager = LocalFocusManager.current
 
         AlertDialog(

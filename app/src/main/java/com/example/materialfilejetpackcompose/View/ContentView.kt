@@ -333,11 +333,25 @@ class ContentView(private val fileViewModel: FileViewModel) {
                 containerColor = MaterialTheme.colorScheme.background,
             ),
             headlineContent = {
-                Text(
-                    text = displayName,
-                    fontSize = if (isGridView) 20.sp else 24.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                if (isGridView) {
+                    Column {
+                        IconAndContent(isGridView, file, fileViewModel, context)
+                        Text(
+                            text = displayName,
+                            fontSize = if (isGridView) 20.sp else 24.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                } else {
+                    Row {
+                        IconAndContent(isGridView, file, fileViewModel, context)
+                        Text(
+                            text = displayName,
+                            fontSize = if (isGridView) 20.sp else 24.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
             },
             leadingContent =  {
                 if (isSelected) {
@@ -354,89 +368,63 @@ class ContentView(private val fileViewModel: FileViewModel) {
                             checkmarkColor = MaterialTheme.colorScheme.inversePrimary
                         )
                     )
-                    return@ListItem
-                }
-                Box(
-                    modifier = Modifier.padding(if (isGridView) 0.dp else 8.dp)
-                ){
-                    when {
-                        file.isDirectory -> {
-                            Icon(
-                                imageVector = Icons.Filled.Folder,
-                                contentDescription = "Folder",
-                                modifier = if (isGridView) Modifier.size(56.dp) else Modifier.size(32.dp),
-                                tint = Color(0xFFFFA400)
-                            )
-                        }
-                        fileViewModel.isFilePhoto(file) -> {
-                            Image(
-                                painter = rememberAsyncImagePainter(
-                                    model = ImageRequest.Builder(context)
-                                        .data(file)
-                                        .build()
-                                ),
-                                contentDescription = "Photo",
-                                modifier = if (isGridView) Modifier.size(72.dp) else Modifier.size(24.dp)
-                            )
-                        }
-                        fileViewModel.isFileAudio(file) -> {
-                            Icon(
-                                imageVector = Icons.Default.MusicNote,
-                                contentDescription = "Audio",
-                                modifier = if (isGridView) Modifier.size(72.dp) else Modifier.size(24.dp),
-                                tint = Color(0xFF757575)
-                            )
-                        }
-                        fileViewModel.isFileVideo(file) -> {
-                            // Display video thumbnail
-                            val thumbnail = rememberVideoThumbnail(file.path)
-                            Image(
-                                bitmap = thumbnail!!.asImageBitmap(),
-                                contentDescription = "Video Thumbnail",
-                                modifier = if (isGridView) Modifier.size(72.dp) else Modifier.size(24.dp),
-                            )
-                        }
-                        else -> {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.InsertDriveFile,
-                                contentDescription = "File",
-                                modifier = if (isGridView) Modifier.size(72.dp) else Modifier.size(24.dp),
-                                tint = Color(0xFF757575)
-                            )
-                        }
-                    }
                 }
             },
-
             modifier = Modifier
                 .selectable(selected = false, true, null) { }
                 .then(clickModifier)
                 .padding(if (isGridView) 8.dp else 16.dp),
-
-//            trailingContent = {
-//                Checkbox(checked = isSelected, onCheckedChange = {
-//                    isSelected = it
-//                    if (isSelected) {
-//                        fileViewModel.addSelectedFile(file)
-//                    } else {
-//                        fileViewModel.removeSelectedFile(file)
-//                    }
-//                },
-//                        modifier = Modifier
-//                        .focusable(false)
-//                    .scale(if (isGridView) 1.5f else 1.25f)
-//                    .padding(if (isGridView) 4.dp else 0.dp)
-//                    ,
-//
-//
-//                    enabled = false,
-//                    colors = CheckboxDefaults.colors(
-//                        disabledCheckedColor = MaterialTheme.colorScheme.primary,
-//                        checkmarkColor = MaterialTheme.colorScheme.inversePrimary
-//                    )
-//                    )
-//            }
         )
+    }
+
+    @Composable
+    fun IconAndContent(isGridView: Boolean, file: File, fileViewModel: FileViewModel, context: Context) {
+        when {
+            file.isDirectory -> {
+                Icon(
+                    imageVector = Icons.Filled.Folder,
+                    contentDescription = "Folder",
+                    modifier = if (isGridView) Modifier.size(56.dp) else Modifier.size(32.dp),
+                    tint = Color(0xFFFFA400)
+                )
+            }
+            fileViewModel.isFilePhoto(file) -> {
+                Image(
+                    painter = rememberAsyncImagePainter(
+                        model = ImageRequest.Builder(context)
+                            .data(file)
+                            .build()
+                    ),
+                    contentDescription = "Photo",
+                    modifier = if (isGridView) Modifier.size(72.dp) else Modifier.size(24.dp)
+                )
+            }
+            fileViewModel.isFileAudio(file) -> {
+                Icon(
+                    imageVector = Icons.Default.MusicNote,
+                    contentDescription = "Audio",
+                    modifier = if (isGridView) Modifier.size(72.dp) else Modifier.size(24.dp),
+                    tint = Color(0xFF757575)
+                )
+            }
+            fileViewModel.isFileVideo(file) -> {
+                // Display video thumbnail
+                val thumbnail = rememberVideoThumbnail(file.path)
+                Image(
+                    bitmap = thumbnail!!.asImageBitmap(),
+                    contentDescription = "Video Thumbnail",
+                    modifier = if (isGridView) Modifier.size(72.dp) else Modifier.size(24.dp),
+                )
+            }
+            else -> {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.InsertDriveFile,
+                    contentDescription = "File",
+                    modifier = if (isGridView) Modifier.size(72.dp) else Modifier.size(24.dp),
+                    tint = Color(0xFF757575)
+                )
+            }
+        }
     }
 
     @Composable

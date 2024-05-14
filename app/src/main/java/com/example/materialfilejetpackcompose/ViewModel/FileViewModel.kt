@@ -334,6 +334,7 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
     fun copyFiles(selectedFiles: Set<File>) {
         filesToCopy.value = selectedFiles
         isCopying = true
+        clearSelectedFiles()
     }
 
     fun pasteFiles(destinationDirectory: File) {

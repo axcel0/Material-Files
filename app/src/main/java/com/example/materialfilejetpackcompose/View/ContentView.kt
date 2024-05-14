@@ -16,10 +16,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ListItem
@@ -53,6 +55,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
@@ -63,6 +66,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.foundation.lazy.grid.TvGridCells
@@ -334,17 +338,27 @@ class ContentView(private val fileViewModel: FileViewModel) {
             ),
             headlineContent = {
                 if (isGridView) {
-                    Column {
-                        IconAndContent(isGridView, file, fileViewModel, context)
-                        Text(
-                            text = displayName,
-                            fontSize = if (isGridView) 20.sp else 24.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.fillMaxWidth().padding(end = 10.dp)
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+
+                            ) {
+                            IconAndContent(isGridView, file, fileViewModel, context)
+                            Text(
+                                text = displayName,
+                                fontSize = if (isGridView) 20.sp else 24.sp,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
                 } else {
                     Row {
                         IconAndContent(isGridView, file, fileViewModel, context)
+                        Spacer(modifier = Modifier.width(10.dp))
                         Text(
                             text = displayName,
                             fontSize = if (isGridView) 20.sp else 24.sp,
@@ -385,7 +399,7 @@ class ContentView(private val fileViewModel: FileViewModel) {
                     imageVector = Icons.Filled.Folder,
                     contentDescription = "Folder",
                     modifier = if (isGridView) Modifier.size(56.dp) else Modifier.size(32.dp),
-                    tint = Color(0xFFFFA400)
+                    tint = Color(0xFFFFA400),
                 )
             }
             fileViewModel.isFilePhoto(file) -> {
@@ -396,14 +410,14 @@ class ContentView(private val fileViewModel: FileViewModel) {
                             .build()
                     ),
                     contentDescription = "Photo",
-                    modifier = if (isGridView) Modifier.size(72.dp) else Modifier.size(24.dp)
+                    modifier = if (isGridView) Modifier.size(56.dp) else Modifier.size(24.dp)
                 )
             }
             fileViewModel.isFileAudio(file) -> {
                 Icon(
                     imageVector = Icons.Default.MusicNote,
                     contentDescription = "Audio",
-                    modifier = if (isGridView) Modifier.size(72.dp) else Modifier.size(24.dp),
+                    modifier = if (isGridView) Modifier.size(56.dp) else Modifier.size(24.dp),
                     tint = Color(0xFF757575)
                 )
             }
@@ -413,14 +427,14 @@ class ContentView(private val fileViewModel: FileViewModel) {
                 Image(
                     bitmap = thumbnail!!.asImageBitmap(),
                     contentDescription = "Video Thumbnail",
-                    modifier = if (isGridView) Modifier.size(72.dp) else Modifier.size(24.dp),
+                    modifier = if (isGridView) Modifier.size(56.dp) else Modifier.size(24.dp),
                 )
             }
             else -> {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.InsertDriveFile,
                     contentDescription = "File",
-                    modifier = if (isGridView) Modifier.size(72.dp) else Modifier.size(24.dp),
+                    modifier = if (isGridView) Modifier.size(56.dp) else Modifier.size(24.dp),
                     tint = Color(0xFF757575)
                 )
             }
@@ -440,7 +454,8 @@ class ContentView(private val fileViewModel: FileViewModel) {
         if (isGridView) {
             TvLazyVerticalGrid(
                 columns = TvGridCells.Adaptive(200.dp),
-                modifier = Modifier.padding(16.dp).fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize(),
                 state = rememberTvLazyGridState(refreshKey),
             ) {
                 var sortedFiles : List<File>

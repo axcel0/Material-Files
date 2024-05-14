@@ -87,7 +87,7 @@ class HomePageView(private val navController: NavHostController, private val fil
                     .fillMaxHeight()
                     .width(widthAnim)
                     .background(MaterialTheme.colorScheme.background)
-                    .padding(horizontal = 10.dp, vertical = 10.dp)
+                    .padding(10.dp)
                     .onFocusChanged { focusState ->
                         isExpanded = focusState.isFocused
                     },

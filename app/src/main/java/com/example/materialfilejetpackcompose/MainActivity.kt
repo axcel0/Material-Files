@@ -179,7 +179,7 @@ class MainActivity : ComponentActivity() {
                                 navController,
                                 fileViewModel,
                                 searchHistoryPref.toList(),
-                                onSearchHistoryChange
+                                onSearchHistoryChange,
                             )
                         }
                         searchPageView.SearchPage()

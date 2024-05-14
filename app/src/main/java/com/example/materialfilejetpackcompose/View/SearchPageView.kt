@@ -72,7 +72,7 @@ import kotlinx.coroutines.flow.toList
 class SearchPageView(private val navController: NavController,
                      private val fileViewModel: FileViewModel,
                      searchHistoryPref : List<String>,
-                     private val onSearchValueChanged: () -> Unit) {
+                     private val onSearchValueChanged: () -> Unit ) {
 
     init {
         fileViewModel.searchHistories.value = searchHistoryPref
@@ -83,7 +83,9 @@ class SearchPageView(private val navController: NavController,
         var searchQuery by remember { mutableStateOf("") }
         val onSearchValueChanged = { value: String -> searchQuery = value }
 
-        Column {
+        Column(
+            Modifier.background(MaterialTheme.colorScheme.background).fillMaxHeight()
+        ) {
             Surface {
                 TopAppBar(
                     modifier = Modifier.fillMaxWidth(),
@@ -108,7 +110,7 @@ class SearchPageView(private val navController: NavController,
 
             }
             if (searchQuery.isEmpty()) {
-                SearchHistory()
+                SearchHistory(onSearchValueChanged)
             } else {
                 SearchResults()
             }
@@ -130,41 +132,6 @@ class SearchPageView(private val navController: NavController,
             )
         }
     }
-
-    @Composable
-    fun SearchInput(searchQuery:String, onSearchValueChanged: (String) -> Unit){
-        val focusManager = LocalFocusManager.current
-        val searchHistories = fileViewModel.searchHistories.observeAsState(emptyList()).value
-
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = onSearchValueChanged,
-            placeholder = { Text("Search..") },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            keyboardActions = KeyboardActions(
-                onSearch = {
-                    focusManager.clearFocus()
-                    if (searchQuery.isNotEmpty()) {
-                        fileViewModel.searchFiles(searchQuery)
-                        if (!searchHistories.contains(searchQuery)) {
-                            fileViewModel.searchHistories.value = searchHistories.toMutableList().apply {
-                                add(searchQuery)
-                            }
-                            onSearchValueChanged()
-                        }
-                    }
-                },
-                onDone = {
-                    focusManager.clearFocus()
-                }
-            ),
-            modifier = Modifier
-                .fillMaxWidth(0.95f)
-                .size(55.dp)
-        )
-    }
-
     @Composable
     fun MenuButton() {
         var isMenuVisible by remember { mutableStateOf(false) }
@@ -212,35 +179,68 @@ class SearchPageView(private val navController: NavController,
         }
     }
 
-
     @Composable
-    fun SearchHistory() {
+    fun SearchInput(searchQuery:String, onSearchValueChanged: (String) -> Unit){
+        val focusManager = LocalFocusManager.current
         val searchHistories = fileViewModel.searchHistories.observeAsState(emptyList()).value
 
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = onSearchValueChanged,
+            placeholder = { Text("Search..") },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(
+                onSearch = {
+                    focusManager.clearFocus()
+                    if (searchQuery.isNotEmpty()) {
+                        fileViewModel.searchFiles(searchQuery)
+                        if (!searchHistories.contains(searchQuery)) {
+                            fileViewModel.searchHistories.value = searchHistories.toMutableList().apply {
+                                add(searchQuery)
+                            }
+                            onSearchValueChanged()
+                        }
+                    }
+                },
+                onDone = {
+                    focusManager.clearFocus()
+                }
+            ),
+            modifier = Modifier
+                .fillMaxWidth(0.95f)
+                .size(55.dp)
+        )
+    }
+
+    @Composable
+    fun SearchHistory(onSearchValueChanged: (String) -> Unit) {
+        val searchHistories = fileViewModel.searchHistories.observeAsState(emptyList()).value
+        val focusManager = LocalFocusManager.current
         LazyColumn(
             modifier = Modifier.background(MaterialTheme.colorScheme.background).fillMaxHeight(),
         ) {
             items(searchHistories) { query ->
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = query,
-                        color = MaterialTheme.colorScheme.onBackground,
-//                        modifier = Modifier.clickable {
-//                            fileViewModel.searchFiles(query)
-//
-//                        }
-                    )
-                    IconButton(onClick = {
-                        fileViewModel.searchHistories.value = searchHistories.toMutableList().apply {
-                            remove(query)
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .fillMaxWidth()
+                        .clickable{
+                            focusManager.clearFocus()
+                            if (query.isNotEmpty()) {
+                                fileViewModel.searchFiles(query)
+                                if (!searchHistories.contains(query)) {
+                                    fileViewModel.searchHistories.value = searchHistories.toMutableList().apply {
+                                        add(query)
+                                    }
+                                }
+                                onSearchValueChanged(query) // Update the search query in the TextField
+                            }
                         }
-                        onSearchValueChanged()
-                    }) {
-                        Icon(imageVector = Icons.Default.Close, contentDescription = "Delete", tint = Color.Gray)
-                    }
+                ) {
+                    Text(text = query, color = MaterialTheme.colorScheme.onBackground)
+                    Spacer(modifier = Modifier.width(8.dp))
                 }
             }
         }
@@ -259,7 +259,7 @@ class SearchPageView(private val navController: NavController,
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(8.dp)
+                        .padding(16.dp)
                         .combinedClickable(
                             onClick = {
                                 if (file.isDirectory) {
@@ -282,7 +282,7 @@ class SearchPageView(private val navController: NavController,
                             Icon(
                                 imageVector = Icons.Default.Folder,
                                 contentDescription = "Folder Icon",
-                                modifier = Modifier.size(24.dp),
+                                modifier = Modifier.size(32.dp),
                                 tint = Color(0xFFFFA400)
                             )
                         }
@@ -292,7 +292,7 @@ class SearchPageView(private val navController: NavController,
                             Image(
                                 painter = imageBitmap,
                                 contentDescription = "Image Thumbnail",
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.size(32.dp)
                             )
                         }
                         fileViewModel.isFileVideo(file) -> {
@@ -301,14 +301,14 @@ class SearchPageView(private val navController: NavController,
                             Image(
                                 bitmap = thumbnail!!.asImageBitmap(),
                                 contentDescription = "Video Thumbnail",
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.size(32.dp)
                             )
                         }
                         fileViewModel.isFileAudio(file) -> {
                             Icon(
                                 imageVector = Icons.Default.MusicNote,
                                 contentDescription = "Audio Icon",
-                                modifier = Modifier.size(24.dp),
+                                modifier = Modifier.size(32.dp),
                                 tint = Color(0xFFFFA400)
                             )
                         }
@@ -316,13 +316,15 @@ class SearchPageView(private val navController: NavController,
                             Icon(
                                 imageVector = Icons.Default.Folder,
                                 contentDescription = "File Icon",
-                                modifier = Modifier.size(24.dp),
+                                modifier = Modifier.size(32.dp),
                                 tint = Color(0xFFFFA400)
                             )
                         }
                     }
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = file.name, color = MaterialTheme.colorScheme.onBackground)
+                    Text(text = file.name,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        fontSize = MaterialTheme.typography.titleMedium.fontSize)
                 }
             }
         }

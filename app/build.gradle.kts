@@ -58,7 +58,7 @@ dependencies {
     implementation("androidx.compose.foundation:foundation-android:1.6.7")
     implementation("androidx.compose.ui:ui-tooling:1.6.7")
     implementation("androidx.tv:tv-material:1.0.0-beta01")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.0")
     implementation("androidx.activity:activity-compose:1.9.0")
     implementation("androidx.compose.material3:material3:1.2.1")
     implementation("com.google.firebase:firebase-annotations:16.2.0")
@@ -73,7 +73,7 @@ dependencies {
     //implementation runtime liveData
     implementation("androidx.compose.runtime:runtime-livedata:1.6.7")
     //lifecycle viewmodel compose
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.0")
     //material icons
     implementation("androidx.compose.material:material-icons-core:1.6.7")
     implementation("androidx.compose.material:material-icons-extended:1.6.7")

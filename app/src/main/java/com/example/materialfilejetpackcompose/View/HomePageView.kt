@@ -43,6 +43,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.platform.LocalContext
@@ -169,7 +170,7 @@ class HomePageView(private val navController: NavHostController, private val fil
                     titleContentColor = MaterialTheme.colorScheme.primary,
                 ),
                 title = {
-                    Text("Material Files", style = MaterialTheme.typography.titleLarge)
+                    Text("Material Files", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
                 },
                 actions = {
                     IconButton(onClick = {

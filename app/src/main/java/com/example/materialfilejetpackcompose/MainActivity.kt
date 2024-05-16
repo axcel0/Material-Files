@@ -332,9 +332,18 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun HandleMultiplePermissions() {
         LocalContext.current
+        val context = LocalContext.current
+        val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                // Handle the result
+                Toast.makeText(context, "Permission granted", Toast.LENGTH_SHORT).show()
+            }
+        }
         val multiplePermissionsState = rememberMultiplePermissionsState(
             permissions = listOf(
                 Manifest.permission.READ_EXTERNAL_STORAGE,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                Manifest.permission.MANAGE_EXTERNAL_STORAGE
             )
         )
 
@@ -344,8 +353,12 @@ class MainActivity : ComponentActivity() {
 
         when {
             multiplePermissionsState.allPermissionsGranted -> {
-                // All permissions are granted, you can perform your action here
+                //open setting permission to allow all the time
+                val intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
+                launcher.launch(intent)
+                Toast.makeText(context, "Permission granted", Toast.LENGTH_SHORT).show()
             }
+
             multiplePermissionsState.shouldShowRationale -> {
                 // This is where you explain to the user why your app needs the permissions
                 AlertDialog(
@@ -366,27 +379,20 @@ class MainActivity : ComponentActivity() {
         }
     }
     @Composable
-    fun HandleSelectedPhotosAccess() {
+    fun HandleActivityResult() {
         val context = LocalContext.current
-        val launcher = rememberLauncherForActivityResult(contract = ActivityResultContracts.StartActivityForResult()) { result ->
+        val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
-                val uri: Uri? = result.data?.data
-                uri?.let {
-                    val takeFlags: Int = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                    context.contentResolver.takePersistableUriPermission(uri, takeFlags)
-                    Toast.makeText(context, "Permission granted", Toast.LENGTH_SHORT).show()
-                }
+                // Handle the result
+                Toast.makeText(context, "Permission granted", Toast.LENGTH_SHORT).show()
             }
         }
 
         Button(onClick = {
-            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-                addCategory(Intent.CATEGORY_OPENABLE)
-                type = "image/*"
-            }
+            val intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
             launcher.launch(intent)
         }) {
-            Text("Select Photo")
+            Text("Open settings")
         }
     }
 

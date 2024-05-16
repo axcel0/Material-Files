@@ -259,16 +259,13 @@ class SearchPageView(private val navController: NavController,
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp)
+//                        .padding(16.dp)
                         .combinedClickable(
                             onClick = {
                                 if (file.isDirectory) {
-                                    // Navigate to the directory
                                     fileViewModel.loadStorage(file)
-                                    //then close the search page
                                     navController.navigate("home")
                                 } else {
-                                    // Open the file with the default app
                                     fileViewModel.openMediaFile(file)
                                 }
                             },

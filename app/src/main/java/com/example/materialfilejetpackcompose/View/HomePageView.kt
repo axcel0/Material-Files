@@ -312,7 +312,7 @@ class HomePageView(private val navController: NavHostController, private val fil
             )
             AnimatedVisibility(
                 visible = expanded,
-                enter = fadeIn() + expandHorizontally{ it} + expandVertically { it },
+                enter = fadeIn(),
                 exit = fadeOut()
             ) {
                 Text(

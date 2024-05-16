@@ -31,6 +31,7 @@ import java.nio.file.StandardCopyOption
 import java.text.DecimalFormat
 import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.LinkedList
 import java.util.Locale
 import kotlin.math.log10
 import kotlin.math.pow
@@ -329,6 +330,7 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
     fun cutFiles(selectedFiles: Set<File>) {
         filesToCopy.value = selectedFiles
         isCopying = false
+        clearSelectedFiles()
     }
 
     fun copyFiles(selectedFiles: Set<File>) {
@@ -345,36 +347,39 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
             return
         }
 
-        filesToCopy.value?.forEach { file ->
-            val isInSameDirectory = file.parent == destinationDirectory.absolutePath
-            if (!isCopying && isInSameDirectory) {
-                return
-            }
+        val filesToPaste = filesToCopy.value?.let { LinkedList(it) }
+        if (filesToPaste != null) {
+            while (filesToPaste.isNotEmpty()) {
+                val file = filesToPaste.removeFirst()
+                val isInSameDirectory = file.parent == destinationDirectory.absolutePath
+                if (!isCopying && isInSameDirectory) {
+                    continue
+                }
 
-            var newFile = File(destinationDirectory, file.name)
-            var counter = 1
-            while (newFile.exists()) {
-                val fileName = file.nameWithoutExtension + "(${counter++})"
-                val extension = file.extension
-                newFile = if (extension.isNotEmpty()) {
-                    File(destinationDirectory, "$fileName.$extension")
+                var newFile = File(destinationDirectory, file.name)
+                var counter = 1
+                while (newFile.exists()) {
+                    val fileName = file.nameWithoutExtension + "(${counter++})"
+                    val extension = file.extension
+                    newFile = if (extension.isNotEmpty()) {
+                        File(destinationDirectory, "$fileName.$extension")
+                    } else {
+                        File(destinationDirectory, fileName)
+                    }
+                }
+
+                if (file.isDirectory) {
+                    newFile.mkdirs()
+                    file.listFiles()?.let { childFiles ->
+                        filesToPaste.addAll(0, childFiles.toList())
+                    }
                 } else {
-                    File(destinationDirectory, fileName)
+                    file.copyTo(newFile)
                 }
-            }
 
-            if (file.isDirectory) {
-                newFile.mkdirs()
-                file.listFiles()?.forEach { childFile ->
-                    filesToCopy.value = setOf(childFile)
-                    pasteFiles(newFile)
+                if (!isCopying) {
+                    deleteFile(file)
                 }
-            } else {
-                file.copyTo(newFile)
-            }
-
-            if (!isCopying) {
-                deleteFile(file)
             }
         }
 

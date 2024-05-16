@@ -6,6 +6,7 @@ import android.graphics.Bitmap
 import android.media.MediaMetadataRetriever
 import android.util.Log
 import android.view.KeyEvent
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -331,6 +332,11 @@ class ContentView(private val fileViewModel: FileViewModel) {
                     }
                 }
             )
+        }
+
+        BackHandler(enabled = selectedFiles!!.isNotEmpty()) {
+            fileViewModel.cancelOperation()
+            isSelected = false
         }
         ListItem(
             colors = ListItemDefaults.colors(

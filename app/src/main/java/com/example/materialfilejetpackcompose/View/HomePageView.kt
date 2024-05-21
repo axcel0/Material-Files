@@ -25,10 +25,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
@@ -81,6 +83,7 @@ class HomePageView(private val navController: NavHostController, private val fil
         var shouldShowDeleteDialog by remember { mutableStateOf(false) }
         var oldFile by remember { mutableStateOf<File?>(null) }
         var externalDevices by remember { mutableStateOf<List<StorageVolume>>(emptyList()) }
+        val progress by fileViewModel.progress.collectAsState()
 
         Surface {
             Column(

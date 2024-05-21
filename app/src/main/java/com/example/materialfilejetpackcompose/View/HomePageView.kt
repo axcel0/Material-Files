@@ -2,21 +2,14 @@ package com.example.materialfilejetpackcompose.View
 
 import android.os.storage.StorageVolume
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateValueAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandHorizontally
-import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkHorizontally
-import androidx.compose.animation.shrinkOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
@@ -24,8 +17,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -41,20 +34,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import com.example.materialfilejetpackcompose.MainActivity
 import com.example.materialfilejetpackcompose.ViewModel.FileViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.io.File
 
 class HomePageView(private val navController: NavHostController, private val fileViewModel: FileViewModel) {
@@ -251,7 +243,7 @@ class HomePageView(private val navController: NavHostController, private val fil
 
                         if (ableToPaste) Pair(Icons.Default.ContentPaste, "Paste") to {
                             ableToPaste = false
-                            fileViewModel.pasteFiles(fileViewModel.currentDirectory.value!!)
+                            fileViewModel.pasteFiles(fileViewModel.currentDirectory.value!!, {progress})
                         } else Pair(Icons.Default.CopyAll, "Copy") to {
                             ableToPaste = true
                             fileViewModel.copyFiles(selectedFiles.value!!)
@@ -285,6 +277,45 @@ class HomePageView(private val navController: NavHostController, private val fil
                     FileInfoDialog(fileInfo) { shouldShowFileInfo = false }
                 }
             }
+        }
+    }
+    @Composable
+    fun LinearDeterminateIndicator() {
+        var currentProgress by remember { mutableStateOf(0f) }
+        var loading by remember { mutableStateOf(false) }
+        val scope = rememberCoroutineScope() // Create a coroutine scope
+
+        Column(
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Button(onClick = {
+                loading = true
+                scope.launch {
+                    loadProgress { progress ->
+                        currentProgress = progress
+                    }
+                    loading = false // Reset loading when the coroutine finishes
+                }
+            }, enabled = !loading) {
+                Text("Start loading")
+            }
+
+            if (loading) {
+                LinearProgressIndicator(
+                    progress = { currentProgress },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
+    }
+
+    /** Iterate the progress value */
+    suspend fun loadProgress(updateProgress: (Float) -> Unit) {
+        for (i in 1..100) {
+            updateProgress(i.toFloat() / 100)
+            delay(100)
         }
     }
 

@@ -7,12 +7,10 @@ import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.media.MediaExtractor
 import android.media.MediaFormat
-import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.storage.StorageManager
 import android.os.storage.StorageVolume
 import android.webkit.MimeTypeMap
-import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -27,7 +25,6 @@ import java.util.Stack
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.Path
-import java.nio.file.StandardCopyOption
 import java.text.DecimalFormat
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -339,16 +336,33 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
         clearSelectedFiles()
     }
 
-    fun pasteFiles(destinationDirectory: File) {
-        // Check if the directory is empty
+
+    fun pasteFiles(destinationDirectory: File, onProgress: (Int) -> Unit) {
+        // Helper function to count all files and directories recursively
+        fun countFiles(files: List<File>): Int {
+            var count = 0
+            val stack = LinkedList(files)
+            while (stack.isNotEmpty()) {
+                val file = stack.removeFirst()
+                count++
+                if (file.isDirectory) {
+                    file.listFiles()?.let { stack.addAll(it) }
+                }
+            }
+            return count
+        }
+
         if (destinationDirectory.listFiles()?.isEmpty() == true) {
-            // Copy the empty directory to the home directory
             destinationDirectory.copyTo(getHomeDirectory())
+            onProgress(100)
             return
         }
 
         val filesToPaste = filesToCopy.value?.let { LinkedList(it) }
         if (filesToPaste != null) {
+            val totalFiles = countFiles(filesToPaste)
+            var processedFiles = 0
+
             while (filesToPaste.isNotEmpty()) {
                 val file = filesToPaste.removeFirst()
                 val isInSameDirectory = file.parent == destinationDirectory.absolutePath
@@ -380,13 +394,20 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
                 if (!isCopying) {
                     deleteFile(file)
                 }
+
+                // Increment processed files count and report progress
+                processedFiles++
+                val progress = (processedFiles * 100) / totalFiles
+                onProgress(progress)
             }
         }
 
         loadStorage(destinationDirectory)
         filesToCopy.value = emptySet()
         clearSelectedFiles()
+        onProgress(100) // Ensure 100% progress is reported at the end
     }
+
     private fun getTotalFiles(files: Set<File>): Int {
         var total = 0
         for (file in files) {

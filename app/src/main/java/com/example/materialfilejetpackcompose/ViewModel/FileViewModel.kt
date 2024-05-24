@@ -337,32 +337,16 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
     }
 
 
-    fun pasteFiles(destinationDirectory: File, onProgress: (Int) -> Unit) {
-        // Helper function to count all files and directories recursively
-        fun countFiles(files: List<File>): Int {
-            var count = 0
-            val stack = LinkedList(files)
-            while (stack.isNotEmpty()) {
-                val file = stack.removeFirst()
-                count++
-                if (file.isDirectory) {
-                    file.listFiles()?.let { stack.addAll(it) }
-                }
-            }
-            return count
-        }
-
+    fun pasteFiles(destinationDirectory: File) {
+        // Check if the directory is empty
         if (destinationDirectory.listFiles()?.isEmpty() == true) {
+            // Copy the empty directory to the home directory
             destinationDirectory.copyTo(getHomeDirectory())
-            onProgress(100)
             return
         }
 
         val filesToPaste = filesToCopy.value?.let { LinkedList(it) }
         if (filesToPaste != null) {
-            val totalFiles = countFiles(filesToPaste)
-            var processedFiles = 0
-
             while (filesToPaste.isNotEmpty()) {
                 val file = filesToPaste.removeFirst()
                 val isInSameDirectory = file.parent == destinationDirectory.absolutePath
@@ -394,18 +378,12 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
                 if (!isCopying) {
                     deleteFile(file)
                 }
-
-                // Increment processed files count and report progress
-                processedFiles++
-                val progress = (processedFiles * 100) / totalFiles
-                onProgress(progress)
             }
         }
 
         loadStorage(destinationDirectory)
         filesToCopy.value = emptySet()
         clearSelectedFiles()
-        onProgress(100) // Ensure 100% progress is reported at the end
     }
 
     private fun getTotalFiles(files: Set<File>): Int {

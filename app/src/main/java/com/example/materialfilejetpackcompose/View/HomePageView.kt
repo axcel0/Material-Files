@@ -243,7 +243,7 @@ class HomePageView(private val navController: NavHostController, private val fil
 
                         if (ableToPaste) Pair(Icons.Default.ContentPaste, "Paste") to {
                             ableToPaste = false
-                            fileViewModel.pasteFiles(fileViewModel.currentDirectory.value!!, {progress})
+                            fileViewModel.pasteFiles(fileViewModel.currentDirectory.value!!)
                         } else Pair(Icons.Default.CopyAll, "Copy") to {
                             ableToPaste = true
                             fileViewModel.copyFiles(selectedFiles.value!!)

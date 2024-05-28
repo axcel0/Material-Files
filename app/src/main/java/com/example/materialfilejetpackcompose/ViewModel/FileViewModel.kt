@@ -42,6 +42,8 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
     private val _progress = MutableStateFlow(0)
     val progress: StateFlow<Int> = _progress
 
+    val pasteProgress: MutableLiveData<Int> = MutableLiveData(0)
+
     private val _files: MutableLiveData<List<File>?> = MutableLiveData()
     val files: LiveData<List<File>?> = _files
 
@@ -335,67 +337,37 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
         isCopying = true
         clearSelectedFiles()
     }
-
-
-    fun pasteFiles(destinationDirectory: File) {
-        // Check if the directory is empty
-        if (destinationDirectory.listFiles()?.isEmpty() == true) {
-            // Copy the empty directory to the home directory
-            destinationDirectory.copyTo(getHomeDirectory())
-            return
-        }
-
-        val filesToPaste = filesToCopy.value?.let { LinkedList(it) }
-        if (filesToPaste != null) {
-            while (filesToPaste.isNotEmpty()) {
-                val file = filesToPaste.removeFirst()
-                val isInSameDirectory = file.parent == destinationDirectory.absolutePath
-                if (!isCopying && isInSameDirectory) {
-                    continue
-                }
-
-                var newFile = File(destinationDirectory, file.name)
-                var counter = 1
-                while (newFile.exists()) {
-                    val fileName = file.nameWithoutExtension + "(${counter++})"
-                    val extension = file.extension
-                    newFile = if (extension.isNotEmpty()) {
-                        File(destinationDirectory, "$fileName.$extension")
-                    } else {
-                        File(destinationDirectory, fileName)
-                    }
-                }
-
-                if (file.isDirectory) {
-                    newFile.mkdirs()
-                    file.listFiles()?.let { childFiles ->
-                        filesToPaste.addAll(0, childFiles.toList())
-                    }
+    //function to paste files complete with error handling and progress tracking
+    fun pasteFiles(destination: File) {
+        val files = filesToCopy.value ?: return
+        val totalFiles = files.size
+        var copiedFiles = 0
+        var progress = 0
+        _progress.value = progress
+        pasteProgress.value = progress
+        files.forEach { file ->
+            val newFile = File(destination, file.name)
+            try {
+                if (isCopying) {
+                    file.copyTo(newFile)
                 } else {
                     file.copyTo(newFile)
+                    Files.delete(Paths.get(file.absolutePath))
                 }
-
-                if (!isCopying) {
-                    deleteFile(file)
-                }
+                copiedFiles++
+                progress = (copiedFiles.toFloat() / totalFiles.toFloat() * 100).toInt()
+                _progress.value = progress
+                pasteProgress.value = progress
+            } catch (e: Exception) {
+                println("Failed to paste file: ${file.absolutePath}")
+                println("Reason: ${e.message}")
+                Toast.makeText(appContext, "Failed to paste file: ${file.name}", Toast.LENGTH_SHORT).show()
             }
         }
-
-        loadStorage(destinationDirectory)
+        loadStorage(currentDirectory.value)
         filesToCopy.value = emptySet()
+        isCopying = false
         clearSelectedFiles()
-    }
-
-    private fun getTotalFiles(files: Set<File>): Int {
-        var total = 0
-        for (file in files) {
-            if (file.isDirectory) {
-                total += file.walk().count()
-            } else {
-                total++
-            }
-        }
-        return total
     }
 
     fun renameFile(oldFile: File, newName: String): String {

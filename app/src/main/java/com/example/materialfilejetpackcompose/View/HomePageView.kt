@@ -76,12 +76,10 @@ class HomePageView(private val navController: NavHostController, private val fil
         var shouldShowDeleteDialog by remember { mutableStateOf(false) }
         var oldFile by remember { mutableStateOf<File?>(null) }
         var externalDevices by remember { mutableStateOf<List<StorageVolume>>(emptyList()) }
-        val progress by fileViewModel.progress.collectAsState()
-
+        LinearDeterminateIndicator(fileViewModel)
         Surface {
             Column(
                 Modifier
-                    .fillMaxHeight()
                     .width(widthAnim)
                     .background(MaterialTheme.colorScheme.background)
                     .padding(10.dp)
@@ -91,18 +89,19 @@ class HomePageView(private val navController: NavHostController, private val fil
                 horizontalAlignment = Alignment.Start,
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
-                Icon(
-                    imageVector = if (isExpanded) Icons.Default.Close else Icons.Default.Menu,
-                    modifier = Modifier
-                        .padding(top = 10.dp, bottom = 50.dp)
-                        .clickable(
-                            onClick = {
-                                isExpanded = !isExpanded
-                            }
-                        ),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimary
-                )
+//                Icon(
+//                    imageVector = if (isExpanded) Icons.Default.Close else Icons.Default.Menu,
+//                    modifier = Modifier
+//                        .padding(top = 10.dp, bottom = 50.dp)
+//                        .clickable(
+//                            onClick = {
+//                                isExpanded = !isExpanded
+//                            }
+//                        ),
+//                    contentDescription = null,
+//                    tint = MaterialTheme.colorScheme.onPrimary
+//                )
+
                 Column(
                     Modifier
                         .width(widthAnim)
@@ -281,39 +280,17 @@ class HomePageView(private val navController: NavHostController, private val fil
         }
     }
     @Composable
-    fun LinearDeterminateIndicator() {
-        var currentProgress by remember { mutableFloatStateOf(0f) }
-        var loading by remember { mutableStateOf(false) }
-        val scope = rememberCoroutineScope() // Create a coroutine scope
+    fun LinearDeterminateIndicator(fileViewModel: FileViewModel) {
+        val progress by fileViewModel.pasteProgress.observeAsState(0)
 
-        Column(
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Button(onClick = {
-                loading = true
-                scope.launch {
-                    loadProgress { progress ->
-                        currentProgress = progress
-                    }
-                    loading = false // Reset loading when the coroutine finishes
-                }
-            }, enabled = !loading) {
-                Text("Start loading")
-            }
-
-            if (loading) {
-                LinearProgressIndicator(
-                    progress = { currentProgress },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-        }
+        LinearProgressIndicator(
+            progress = { progress / 100f },
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
 
     /** Iterate the progress value */
-    suspend fun loadProgress(updateProgress: (Float) -> Unit) {
+    private suspend fun loadProgress(updateProgress: (Float) -> Unit) {
         for (i in 1..100) {
             updateProgress(i.toFloat() / 100)
             delay(100)

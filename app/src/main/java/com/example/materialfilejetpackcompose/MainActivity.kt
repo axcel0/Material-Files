@@ -162,9 +162,10 @@ class MainActivity : ComponentActivity() {
             }
 
             MaterialFileJetpackComposeTheme(isInDarkTheme = isDarkTheme) {
-                // NavHost for navigation
                 val navController = rememberNavController()
-                NavHost(navController = navController, startDestination = "home") {
+                NavHost(navController = navController,
+                    startDestination = "home"
+                ) {
                     composable("home") {
                         val homePageView by lazy { HomePageView(navController, fileViewModel) }
                         homePageView.HomePage()
@@ -234,7 +235,6 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                // Exit dialog
                 if (isExitDialogShown) {
                     ExitAlertDialog(
                         title = "Exit",
@@ -264,6 +264,7 @@ class MainActivity : ComponentActivity() {
         onDismiss: () -> Unit
     ) {
         AlertDialog(
+            modifier = Modifier.focusable(false),
             onDismissRequest = onDismiss,
             title = { Text(title) },
             text = { Text(message) },

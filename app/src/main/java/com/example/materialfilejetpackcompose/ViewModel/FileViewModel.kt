@@ -16,20 +16,21 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
-import java.util.Stack
 import java.nio.file.Files
-import java.nio.file.Paths
 import java.nio.file.Path
+import java.nio.file.Paths
+import java.nio.file.StandardCopyOption
 import java.text.DecimalFormat
 import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.LinkedList
 import java.util.Locale
+import java.util.Stack
 import kotlin.math.log10
 import kotlin.math.pow
 
@@ -38,10 +39,6 @@ enum class SortType {
 }
 
 class FileViewModel(private val appContext: Context) : ViewModel() {
-
-    private val _progress = MutableStateFlow(0)
-    val progress: StateFlow<Int> = _progress
-
     val pasteProgress: MutableLiveData<Int> = MutableLiveData(0)
 
     private val _files: MutableLiveData<List<File>?> = MutableLiveData()
@@ -59,8 +56,8 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
 
     private var filesInTrash = mutableListOf<File>()
 
-    var filesToCopy = MutableLiveData<Set<File>?>(emptySet())
-    var isCopying = false
+    internal var filesToCopy = MutableLiveData<Set<File>?>(emptySet())
+    private var isCopying = false
 
     var searchHistories = MutableLiveData<List<String>>()
 
@@ -209,15 +206,19 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
     private val _searchResults: MutableLiveData<List<File>> = MutableLiveData()
     val searchResults: LiveData<List<File>> = _searchResults
 
+    internal val searchLoadProgress = MutableLiveData(0)
+
     fun searchFiles(query: String) {
         val currentDir = currentDirectory.value
         val results = mutableListOf<File>()
 
+        searchLoadProgress.value = 1 // 1 = show progress bar
         currentDir?.walk()?.forEach { file ->
             if (file.name.contains(query, ignoreCase = true)) {
                 results.add(file)
             }
         }
+        searchLoadProgress.value = 0 // 0 = hide progress bar
 
         _searchResults.value = results
     }
@@ -337,37 +338,54 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
         isCopying = true
         clearSelectedFiles()
     }
-    //function to paste files complete with error handling and progress tracking
     fun pasteFiles(destination: File) {
         val files = filesToCopy.value ?: return
         val totalFiles = files.size
         var copiedFiles = 0
-        var progress = 0
-        _progress.value = progress
-        pasteProgress.value = progress
+        var progress: Int
+        pasteProgress.value = 0
+
+        val onFinished = {
+            loadStorage(currentDirectory.value)
+            filesToCopy.value = emptySet()
+            isCopying = false
+            clearSelectedFiles()
+            viewModelScope.launch {
+                resetPasteProgress()
+            }
+        }
+
         files.forEach { file ->
-            val newFile = File(destination, file.name)
+            val newFile = Paths.get(destination.absolutePath, file.name)
             try {
                 if (isCopying) {
-                    file.copyTo(newFile)
+                    Files.copy(file.toPath(), newFile, StandardCopyOption.REPLACE_EXISTING)
                 } else {
-                    file.copyTo(newFile)
-                    Files.delete(Paths.get(file.absolutePath))
+                    Files.copy(file.toPath(), newFile, StandardCopyOption.REPLACE_EXISTING)
+                    Files.delete(file.toPath())
                 }
+
                 copiedFiles++
                 progress = (copiedFiles.toFloat() / totalFiles.toFloat() * 100).toInt()
-                _progress.value = progress
                 pasteProgress.value = progress
+
+                val isFinished = copiedFiles == totalFiles
+                if (isFinished) {
+                    onFinished()
+                }
             } catch (e: Exception) {
                 println("Failed to paste file: ${file.absolutePath}")
                 println("Reason: ${e.message}")
                 Toast.makeText(appContext, "Failed to paste file: ${file.name}", Toast.LENGTH_SHORT).show()
             }
         }
-        loadStorage(currentDirectory.value)
-        filesToCopy.value = emptySet()
-        isCopying = false
-        clearSelectedFiles()
+    }
+
+    private suspend fun resetPasteProgress() {
+        withContext(Dispatchers.IO) {
+            Thread.sleep(2000)
+        }
+        pasteProgress.postValue(0)
     }
 
     fun renameFile(oldFile: File, newName: String): String {
@@ -375,9 +393,10 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
 
         if (oldFile.isDirectory) {
             val newFile = File(oldFile.parent, newName)
-            if (oldFile.renameTo(newFile)) {
+            try {
+                Files.move(oldFile.toPath(), newFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
                 loadStorage(currentDirectory.value)
-            } else {
+            } catch (e: Exception) {
                 Toast.makeText(appContext, "Failed to rename directory", Toast.LENGTH_SHORT).show()
             }
         } else {
@@ -385,10 +404,11 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
             val newExtension = if (nameParts.size > 1) nameParts.last() else oldFile.extension
             val newFileName = if (nameParts.size > 1) nameParts.dropLast(1).joinToString(".") else newName
             val newFile = File(oldFile.parent, "$newFileName.$newExtension")
-            if (oldFile.renameTo(newFile)) {
+            try {
+                Files.move(oldFile.toPath(), newFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
                 loadStorage(currentDirectory.value)
-            } else {
-                Toast.makeText(appContext, "Failed to rename file", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Toast.makeText(appContext, "Fortunately Success to rename file", Toast.LENGTH_SHORT).show()
             }
         }
         return oldFileName

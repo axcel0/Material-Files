@@ -8,6 +8,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material3.BottomAppBar
@@ -17,28 +18,27 @@ import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -46,8 +46,6 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.materialfilejetpackcompose.ViewModel.FileViewModel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import java.io.File
 
 class HomePageView(private val navController: NavHostController, private val fileViewModel: FileViewModel) {
@@ -55,58 +53,54 @@ class HomePageView(private val navController: NavHostController, private val fil
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun HomePage() {
+        val selectedFiles = fileViewModel.selectedFiles.collectAsState()
+        val filesToCopy = fileViewModel.filesToCopy.observeAsState()
+
         var isExpanded by remember { mutableStateOf(false) }
+        var fileInfo: String by remember { mutableStateOf("") }
+        var oldFile by remember { mutableStateOf<File?>(null) }
+        var ableToPaste by remember { mutableStateOf(false) }
+
+        var isDropdownMenuVisible by remember { mutableStateOf(false) }
+        var shouldShowNewFolderDialog by remember { mutableStateOf(false) }
         val shouldShowFileCanvasOperation by remember { mutableStateOf(false) }
+
+        var shouldShowFileInfo by remember { mutableStateOf(false) }
+        var shouldShowRenameDialog by remember { mutableStateOf(false) }
+        var shouldShowDeleteDialog by remember { mutableStateOf(false) }
+        var externalDevices by remember { mutableStateOf<List<StorageVolume>>(emptyList()) }
+
         val widthAnim by animateDpAsState(
             targetValue = if (isExpanded) 200.dp else 50.dp,
             animationSpec = tween(durationMillis = 10), label = "anime"
         )
+
         val widthAnime by animateDpAsState(
             targetValue = if (shouldShowFileCanvasOperation) 200.dp else 0.dp,
             animationSpec = tween(durationMillis = 50), label = "anime",
         )
-        val selectedFiles = fileViewModel.selectedFiles.collectAsState()
-        var isDropdownMenuVisible by remember { mutableStateOf(false) }
-        var shouldShowNewFolderDialog by remember { mutableStateOf(false) }
-        val filesToCopy = fileViewModel.filesToCopy.observeAsState()
-        var ableToPaste by remember { mutableStateOf(false) }
-        var shouldShowFileInfo by remember { mutableStateOf(false) }
-        var fileInfo: String by remember { mutableStateOf("") }
-        var shouldShowRenameDialog by remember { mutableStateOf(false) }
-        var shouldShowDeleteDialog by remember { mutableStateOf(false) }
-        var oldFile by remember { mutableStateOf<File?>(null) }
-        var externalDevices by remember { mutableStateOf<List<StorageVolume>>(emptyList()) }
-        LinearDeterminateIndicator(fileViewModel)
-        Surface {
+
+        Surface(
+            modifier = Modifier.focusable(false)
+        ) {
             Column(
                 Modifier
                     .width(widthAnim)
                     .background(MaterialTheme.colorScheme.background)
                     .padding(10.dp)
+                    .focusable(false)
                     .onFocusChanged { focusState ->
                         isExpanded = focusState.isFocused
                     },
                 horizontalAlignment = Alignment.Start,
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
-//                Icon(
-//                    imageVector = if (isExpanded) Icons.Default.Close else Icons.Default.Menu,
-//                    modifier = Modifier
-//                        .padding(top = 10.dp, bottom = 50.dp)
-//                        .clickable(
-//                            onClick = {
-//                                isExpanded = !isExpanded
-//                            }
-//                        ),
-//                    contentDescription = null,
-//                    tint = MaterialTheme.colorScheme.onPrimary
-//                )
-
                 Column(
                     Modifier
+                        .fillMaxHeight(0.9f)
                         .width(widthAnim)
-                        .padding(bottom = 50.dp)
-
+                        .focusable(false),
+                    verticalArrangement = Arrangement.Center,
                 ) {
                     DrawerItem(Icons.Default.Folder, "All Files", isExpanded) {
                         val homeDir = fileViewModel.getHomeDirectory()
@@ -146,16 +140,6 @@ class HomePageView(private val navController: NavHostController, private val fil
                 }
             }
 
-            Column(
-                Modifier
-                    .fillMaxHeight()
-                    .width(widthAnime)
-                    .background(MaterialTheme.colorScheme.background)
-                    .padding(horizontal = 10.dp, vertical = 10.dp),
-                horizontalAlignment = Alignment.Start,
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {}
-
             CenterAlignedTopAppBar(
                 modifier = Modifier
                     .padding(start = widthAnim)
@@ -165,7 +149,11 @@ class HomePageView(private val navController: NavHostController, private val fil
                     titleContentColor = MaterialTheme.colorScheme.primary,
                 ),
                 title = {
-                    Text("Material Files", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
+                    Text("Material Files",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.focusable(false)
+                    )
                 },
                 actions = {
                     IconButton(onClick = {
@@ -279,23 +267,6 @@ class HomePageView(private val navController: NavHostController, private val fil
             }
         }
     }
-    @Composable
-    fun LinearDeterminateIndicator(fileViewModel: FileViewModel) {
-        val progress by fileViewModel.pasteProgress.observeAsState(0)
-
-        LinearProgressIndicator(
-            progress = { progress / 100f },
-            modifier = Modifier.fillMaxWidth(),
-        )
-    }
-
-    /** Iterate the progress value */
-    private suspend fun loadProgress(updateProgress: (Float) -> Unit) {
-        for (i in 1..100) {
-            updateProgress(i.toFloat() / 100)
-            delay(100)
-        }
-    }
 
     @Composable
     fun ActionButton(imageVector: ImageVector, text: String, onClick: () -> Unit) {
@@ -313,6 +284,7 @@ class HomePageView(private val navController: NavHostController, private val fil
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 8.dp)
+                .focusable(false)
                 .clickable { onClick() },
             verticalAlignment = Alignment.CenterVertically
         ) {

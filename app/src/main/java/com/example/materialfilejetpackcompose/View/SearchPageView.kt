@@ -36,6 +36,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -61,6 +62,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.materialfilejetpackcompose.MainActivity
@@ -82,9 +84,12 @@ class SearchPageView(private val navController: NavController,
     fun SearchPage() {
         var searchQuery by remember { mutableStateOf("") }
         val onSearchValueChanged = { value: String -> searchQuery = value }
+        val progressDialogVisible by fileViewModel.searchLoadProgress.observeAsState(0)
 
         Column(
-            Modifier.background(MaterialTheme.colorScheme.background).fillMaxHeight()
+            Modifier
+                .background(MaterialTheme.colorScheme.background)
+                .fillMaxHeight()
         ) {
             Surface {
                 TopAppBar(
@@ -107,12 +112,20 @@ class SearchPageView(private val navController: NavController,
                 )
 
                 // TODO: Search filter
+                // フィルター：　期間（昨日、過去7日間、過去３０日間）
+                //　タイプ：　画像、動画、オーディオ、ドキュメント、インストールファイル、圧縮ファイル）
+                // これガチでしんどいな
 
             }
             if (searchQuery.isEmpty()) {
                 SearchHistory(onSearchValueChanged)
             } else {
                 SearchResults()
+
+                if (progressDialogVisible <= 0) {
+                    return
+                }
+                CircularProgressAlert()
             }
         }
     }
@@ -193,12 +206,15 @@ class SearchPageView(private val navController: NavController,
             keyboardActions = KeyboardActions(
                 onSearch = {
                     focusManager.clearFocus()
+
                     if (searchQuery.isNotEmpty()) {
                         fileViewModel.searchFiles(searchQuery)
+
                         if (!searchHistories.contains(searchQuery)) {
                             fileViewModel.searchHistories.value = searchHistories.toMutableList().apply {
                                 add(searchQuery)
                             }
+
                             onSearchValueChanged()
                         }
                     }
@@ -218,7 +234,9 @@ class SearchPageView(private val navController: NavController,
         val searchHistories = fileViewModel.searchHistories.observeAsState(emptyList()).value
         val focusManager = LocalFocusManager.current
         LazyColumn(
-            modifier = Modifier.background(MaterialTheme.colorScheme.background).fillMaxHeight(),
+            modifier = Modifier
+                .background(MaterialTheme.colorScheme.background)
+                .fillMaxHeight(),
         ) {
             items(searchHistories) { query ->
                 Row(
@@ -226,15 +244,18 @@ class SearchPageView(private val navController: NavController,
                     modifier = Modifier
                         .padding(16.dp)
                         .fillMaxWidth()
-                        .clickable{
+                        .clickable {
                             focusManager.clearFocus()
                             if (query.isNotEmpty()) {
                                 fileViewModel.searchFiles(query)
                                 if (!searchHistories.contains(query)) {
-                                    fileViewModel.searchHistories.value = searchHistories.toMutableList().apply {
-                                        add(query)
-                                    }
+                                    fileViewModel.searchHistories.value = searchHistories
+                                        .toMutableList()
+                                        .apply {
+                                            add(query)
+                                        }
                                 }
+
                                 onSearchValueChanged(query) // Update the search query in the TextField
                             }
                         }
@@ -252,14 +273,15 @@ class SearchPageView(private val navController: NavController,
         val searchResults by fileViewModel.searchResults.observeAsState(emptyList())
 
         LazyColumn(
-            modifier = Modifier.background(MaterialTheme.colorScheme.background).fillMaxHeight(),
+            modifier = Modifier
+                .background(MaterialTheme.colorScheme.background)
+                .fillMaxHeight(),
         
         ) {
             items(searchResults) { file ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-//                        .padding(16.dp)
                         .combinedClickable(
                             onClick = {
                                 if (file.isDirectory) {
@@ -373,5 +395,19 @@ class SearchPageView(private val navController: NavController,
                 }
             }
         )
+    }
+
+    @Composable
+    private fun CircularProgressAlert() {
+        Dialog(onDismissRequest = { }) {
+            Row {
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .size(32.dp),
+                )
+                Text(text = "検索しています…")
+            }
+        }
     }
 }

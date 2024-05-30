@@ -356,13 +356,24 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
         }
 
         files.forEach { file ->
-            val newFile = Paths.get(destination.absolutePath, file.name)
+            var newFile = File(destination, file.name)
+            var counter = 1
+            while (newFile.exists()) {
+                val fileName = file.nameWithoutExtension + "(${counter++})"
+                val extension = file.extension
+                newFile = if (extension.isNotEmpty()) {
+                    File(destination, "$fileName.$extension")
+                } else {
+                    File(destination, fileName)
+                }
+            }
+
             try {
                 if (isCopying) {
-                    Files.copy(file.toPath(), newFile, StandardCopyOption.REPLACE_EXISTING)
+                    file.copyTo(newFile, overwrite = true)
                 } else {
-                    Files.copy(file.toPath(), newFile, StandardCopyOption.REPLACE_EXISTING)
-                    Files.delete(file.toPath())
+                    file.copyTo(newFile, overwrite = true)
+                    file.delete()
                 }
 
                 copiedFiles++

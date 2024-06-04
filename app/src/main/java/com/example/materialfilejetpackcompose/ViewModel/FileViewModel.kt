@@ -128,16 +128,61 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
         return File("/storage/emulated/0")
     }
 
-    //region Photos
-
     fun loadPhotosOnly(directory: File? = null) {
-        val photoExtensions = listOf("jpg", "png", "jpeg", "gif")
-        loadAllFilesWithExtensions(directory, photoExtensions)
+        loadAllFilesWithExtensions(directory) { file ->
+            isFilePhoto(file)
+        }
     }
 
     fun isFilePhoto(file: File): Boolean {
-        val photoExtensions = listOf("jpg", "png", "jpeg", "gif")
-        return photoExtensions.contains(file.extension.lowercase(Locale.ROOT))
+        val extension = file.extension.lowercase(Locale.ROOT)
+        val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
+        return mimeType?.startsWith("image/") == true
+    }
+
+    fun loadVideosOnly(directory: File? = null) {
+        loadAllFilesWithExtensions(directory) { file ->
+            isFileVideo(file)
+        }
+    }
+
+    fun isFileVideo(file: File): Boolean {
+        val extension = file.extension.lowercase(Locale.ROOT)
+        val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
+        return mimeType?.startsWith("video/") == true
+    }
+
+    fun loadAudiosOnly(directory: File? = null) {
+        loadAllFilesWithExtensions(directory) { file ->
+            isFileAudio(file)
+        }
+    }
+
+    fun isFileAudio(file: File): Boolean {
+        val extension = file.extension.lowercase(Locale.ROOT)
+        val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
+        return mimeType?.startsWith("audio/") == true
+    }
+
+    private fun loadAllFilesWithExtensions(directory: File? = null, filter: (File) -> Boolean) {
+        val path = directory?.absolutePath
+        directoryStack.push(directory)
+        _currentPath.postValue(directoryStack.joinToString(separator = "/") { it.name })
+        if (path != null) {
+            if (path.contains("/Android/data") || path.contains("/Android/obb")) {
+                return
+            }
+        }
+        if (directory != null) {
+            val filteredFiles = mutableListOf<File>()
+            directory.walk().forEach { file ->
+                if (file.isFile && filter(file)) {
+                    filteredFiles.add(file)
+                }
+            }
+            (files as MutableLiveData).postValue(filteredFiles)
+        }
+        (currentDirectory as MutableLiveData).postValue(directory)
     }
 
     fun openMediaFile(file: File) {
@@ -157,48 +202,6 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
             // Log the error or show a user-friendly error message
             println("File does not exist or is a directory")
         }
-    }
-
-    //endregion Photos
-
-    fun loadVideosOnly(directory: File? = null) {
-        val videoExtensions = listOf("mp4", "avi", "flv", "mov", "mkv")
-        loadAllFilesWithExtensions(directory, videoExtensions)
-    }
-    fun isFileVideo(file: File): Boolean {
-        val videoExtensions = listOf("mp4", "avi", "flv", "mov", "mkv")
-        return videoExtensions.contains(file.extension.lowercase(Locale.ROOT))
-    }
-
-    fun loadAudiosOnly(directory: File? = null) {
-        val audioExtensions = listOf("mp3", "wav", "ogg", "flac", "aac")
-        loadAllFilesWithExtensions(directory, audioExtensions)
-    }
-
-    fun isFileAudio(file: File): Boolean {
-        val audioExtensions = listOf("mp3", "wav", "aac", "flac", "ogg")
-        return audioExtensions.contains(file.extension.lowercase(Locale.ROOT))
-    }
-
-    private fun loadAllFilesWithExtensions(directory: File? = null, extensions: List<String>) {
-        val path = directory?.absolutePath
-        directoryStack.push(directory)
-        _currentPath.postValue(directoryStack.joinToString(separator = "/") { it.name })
-        if (path != null) {
-            if (path.contains("/Android/data") || path.contains("/Android/obb")) {
-                return
-            }
-        }
-        if (directory != null) {
-            val filteredFiles = mutableListOf<File>()
-            directory.walk().forEach { file ->
-                if (file.isFile && file.extension in extensions) {
-                    filteredFiles.add(file)
-                }
-            }
-            (files as MutableLiveData).postValue(filteredFiles)
-        }
-        (currentDirectory as MutableLiveData).postValue(directory)
     }
 
     //region Search
@@ -428,20 +431,10 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
     fun getFileInfo(file: File): String {
         val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
         val lastModified = sdf.format(Date(file.lastModified()))
-        val size: Long = if (file.isDirectory) {
-            file.walk().filter { it.isFile }.map { it.length() }.sum()
-        } else {
-            file.length()
-        }
+        val size = getFileSize(file)
         val readableSize = getReadableFileSize(size)
         val format = file.extension
-        val type = when {
-            file.isDirectory -> "Folder"
-            isFileVideo(file) -> "Video"
-            isFileAudio(file) -> "Audio"
-            isFilePhoto(file) -> "Photo"
-            else -> "File"
-        }
+        val type = getFileType(file)
         val isReadable = if (file.canRead()) "Yes" else "No"
         val isWritable = if (file.canWrite()) "Yes" else "No"
         val isHidden = if (file.isHidden) "Yes" else "No"
@@ -451,34 +444,71 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
         } else {
             "Not applicable"
         }
-        val codec = when {
-            isFileVideo(file) || isFileAudio(file) -> getMediaCodec(file)
-            isFilePhoto(file) -> format
+        val codec = getCodec(file, format, type)
+
+        return """
+        Type: $type
+        Format: $format
+        Size: $readableSize
+        Last Modified: $lastModified
+        Readable: $isReadable
+        Writable: $isWritable
+        Hidden: $isHidden
+        Contains: $content
+        Codec: $codec
+    """.trimIndent()
+    }
+
+    private fun getFileSize(file: File): Long {
+        return if (file.isDirectory) {
+            Files.walk(file.toPath()).filter { it.toFile().isFile }.mapToLong { it.toFile().length() }.sum()
+        } else {
+            file.length()
+        }
+    }
+
+    private fun getFileType(file: File): String {
+        return when {
+            file.isDirectory -> "Folder"
+            isFileVideo(file) -> "Video"
+            isFileAudio(file) -> "Audio"
+            isFilePhoto(file) -> "Photo"
+            else -> "File"
+        }
+    }
+
+    private fun getCodec(file: File, format: String, type: String): String {
+        return when (type) {
+            "Video", "Audio" -> getMediaCodec(file)
+            "Photo" -> format
             else -> "Not applicable"
         }
-
-        return "Type: $type\nFormat: $format\nSize: $readableSize\nLast Modified: $lastModified\nReadable: $isReadable\nWritable: $isWritable\nHidden: $isHidden\nContains: $content\nCodec: $codec"
     }
 
     private fun getMediaCodec(file: File): String {
         val extractor = MediaExtractor()
-        extractor.setDataSource(file.absolutePath)
-        val format = extractor.getTrackFormat(0)
-        val codec = format.getString(MediaFormat.KEY_MIME)?.substringAfter("/")
-        extractor.release()
-        return when (codec) {
-            "avc" -> "H.264/AVC"
-            "hevc" -> "H.265/HEVC"
-            else -> codec ?: "Unknown"
+        return try {
+            extractor.setDataSource(file.absolutePath)
+            val format = extractor.getTrackFormat(0)
+            when (val codec = format.getString(MediaFormat.KEY_MIME)?.substringAfter("/")) {
+                "avc" -> "H.264/AVC"
+                "hevc" -> "H.265/HEVC"
+                else -> codec ?: "Unknown"
+            }
+        } catch (e: Exception) {
+            "Unknown"
+        } finally {
+            extractor.release()
         }
     }
 
     private fun getReadableFileSize(size: Long): String {
-        if (size <= 0) return "0"
+        if (size <= 0) return "0 B"
         val units = arrayOf("B", "KB", "MB", "GB", "TB")
         val digitGroups = (log10(size.toDouble()) / log10(1024.0)).toInt()
         return DecimalFormat("#,##0.#").format(size / 1024.0.pow(digitGroups.toDouble())) + " " + units[digitGroups]
     }
+
 
     fun cancelOperation() {
         filesToCopy.value = emptySet()

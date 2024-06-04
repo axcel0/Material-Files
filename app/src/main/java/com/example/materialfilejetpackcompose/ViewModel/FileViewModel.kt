@@ -397,7 +397,7 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
 
     private suspend fun resetPasteProgress() {
         withContext(Dispatchers.IO) {
-            Thread.sleep(2000)
+            Thread.sleep(1000)
         }
         pasteProgress.postValue(0)
     }

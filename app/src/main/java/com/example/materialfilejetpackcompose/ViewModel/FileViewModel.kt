@@ -5,8 +5,10 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.graphics.BitmapFactory
 import android.media.MediaExtractor
 import android.media.MediaFormat
+import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.storage.StorageManager
 import android.os.storage.StorageVolume
@@ -446,19 +448,35 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
         }
         val codec = getCodec(file, format, type)
 
+        val resolution = if (type == "Photo") {
+            getPhotoResolution(file)
+        } else {
+            "Not applicable"
+        }
+
         return """
-        Type: $type
-        Format: $format
-        Size: $readableSize
-        Last Modified: $lastModified
-        Readable: $isReadable
-        Writable: $isWritable
-        Hidden: $isHidden
-        Contains: $content
-        Codec: $codec
-    """.trimIndent()
+            Type: $type
+            Format: $format
+            Size: $readableSize
+            Last Modified: $lastModified
+            Readable: $isReadable
+            Writable: $isWritable
+            Hidden: $isHidden
+            Contains: $content
+            Codec: $codec
+            Resolution: $resolution
+        """.trimIndent()
     }
 
+    private fun getPhotoResolution(file: File): String {
+        val options = BitmapFactory.Options().apply {
+            inJustDecodeBounds = true
+        }
+        BitmapFactory.decodeFile(file.absolutePath, options)
+        val width = options.outWidth
+        val height = options.outHeight
+        return "${width}x${height}"
+    }
     private fun getFileSize(file: File): Long {
         return if (file.isDirectory) {
             Files.walk(file.toPath()).filter { it.toFile().isFile }.mapToLong { it.toFile().length() }.sum()
@@ -479,7 +497,14 @@ class FileViewModel(private val appContext: Context) : ViewModel() {
 
     private fun getCodec(file: File, format: String, type: String): String {
         return when (type) {
-            "Video", "Audio" -> getMediaCodec(file)
+            "Video", "Audio" -> {
+                val retriever = MediaMetadataRetriever()
+                retriever.setDataSource(file.absolutePath)
+                val bitrate = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE)
+                val codec = getMediaCodec(file)
+                retriever.release()
+                "$codec, Bitrate: $bitrate"
+            }
             "Photo" -> format
             else -> "Not applicable"
         }

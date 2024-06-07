@@ -332,7 +332,6 @@ class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalPermissionsApi::class)
     @Composable
     fun HandleMultiplePermissions() {
-        LocalContext.current
         val context = LocalContext.current
         val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
@@ -348,16 +347,45 @@ class MainActivity : ComponentActivity() {
             )
         )
 
+        var showDialog by remember { mutableStateOf(true) }
+
         LaunchedEffect(multiplePermissionsState) {
             multiplePermissionsState.launchMultiplePermissionRequest()
         }
 
         when {
             multiplePermissionsState.allPermissionsGranted -> {
-                //open setting permission to allow all the time
-                val intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
-                launcher.launch(intent)
-                Toast.makeText(context, "Permission granted", Toast.LENGTH_SHORT).show()
+                // Check if the permissions are allowed all the time
+                if (!Environment.isExternalStorageManager()) {
+                    // If not, show a dialog to the user
+                    if (showDialog) {
+                        AlertDialog(
+                            onDismissRequest = {
+                                showDialog = true
+                            },
+                            title = { Text("Permissions needed") },
+                            text = { Text("This app needs access to your storage and media files all the time to function properly. Please allow the permissions all the time in the settings.") },
+                            confirmButton = {
+                                TextButton(onClick = {
+                                    // Open settings to allow the user to change the permission
+                                    val intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
+                                    launcher.launch(intent)
+                                }) {
+                                    Text("Open settings")
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = {
+                                    showDialog = true
+                                }) {
+                                    Text("No")
+                                }
+                            }
+                        )
+                    }
+                } else {
+                    Toast.makeText(context, "Permission granted", Toast.LENGTH_SHORT).show()
+                }
             }
 
             multiplePermissionsState.shouldShowRationale -> {

@@ -70,6 +70,7 @@ import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.Settings
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
@@ -93,6 +94,10 @@ private fun getVersionName(context: Context): String {
 }
 
 class MainActivity : ComponentActivity() {
+    override fun onDestroy() {
+        super.onDestroy()
+        fileViewModel.cleanup()
+    }
 
     companion object {
         private const val PREFERENCE_THEME = "preference_theme"
@@ -124,7 +129,7 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-//            HandleRequestPersimmon()
+            HandleRequestPermission()
             HandleMultiplePermissions()
 
             val selectedFiles = fileViewModel.selectedFiles.collectAsState()
@@ -136,70 +141,73 @@ class MainActivity : ComponentActivity() {
                 mutableStateOf(sharedPreferences.getBoolean(DARK_MODE_PREF, isSystemInDarkTheme))
             }
 
-            val onDarkModeChange : (Boolean) -> Unit = {
-                isDarkTheme = it
-                sharedPreferences.edit().putBoolean(DARK_MODE_PREF, it).apply()
-            }
-
-            var searchHistoryPref = sharedPreferences.getStringSet(SEARCH_HISTORY_PREF, setOf()) ?: setOf()
-
-            val onSearchHistoryChange : () -> Unit = {
-                val searchHistorySet = fileViewModel.searchHistories.value!!.toSet()
-                sharedPreferences.edit().putStringSet(SEARCH_HISTORY_PREF, searchHistorySet).apply()
-                searchHistoryPref = searchHistorySet
-            }
-
-            var isExitDialogShown by remember { mutableStateOf(false) }
-            BackHandler {
-                val hasDirStack = fileViewModel.directoryStack.size > 1
-                if (hasDirStack) {
-                    fileViewModel.directoryStack.pop()
-                    fileViewModel.loadStorage(fileViewModel.directoryStack.last())
-                    fileViewModel.directoryStack.pop()
-                } else {
-                    isExitDialogShown = !isExitDialogShown
+                val onDarkModeChange: (Boolean) -> Unit = {
+                    isDarkTheme = it
+                    sharedPreferences.edit().putBoolean(DARK_MODE_PREF, it).apply()
                 }
-            }
 
-            MaterialFileJetpackComposeTheme(isInDarkTheme = isDarkTheme) {
-                val navController = rememberNavController()
-                NavHost(navController = navController,
-                    startDestination = "home"
-                ) {
-                    composable("home") {
-                        val homePageView by lazy { HomePageView(navController, fileViewModel) }
-                        homePageView.HomePage()
+                var searchHistoryPref =
+                    sharedPreferences.getStringSet(SEARCH_HISTORY_PREF, setOf()) ?: setOf()
+
+                val onSearchHistoryChange: () -> Unit = {
+                    val searchHistorySet = fileViewModel.searchHistories.value!!.toSet()
+                    sharedPreferences.edit().putStringSet(SEARCH_HISTORY_PREF, searchHistorySet)
+                        .apply()
+                    searchHistoryPref = searchHistorySet
+                }
+
+                var isExitDialogShown by remember { mutableStateOf(false) }
+                BackHandler {
+                    val hasDirStack = fileViewModel.directoryStack.size > 1
+                    if (hasDirStack) {
+                        fileViewModel.directoryStack.pop()
+                        fileViewModel.loadStorage(fileViewModel.directoryStack.last())
+                        fileViewModel.directoryStack.pop()
+                    } else {
+                        isExitDialogShown = !isExitDialogShown
                     }
-                    composable("settings") {
-                        val settingsPageView by lazy { SettingsPageView(navController) }
-                        settingsPageView.SettingsPage(isDarkTheme, onDarkModeChange)
-                    }
-                    composable("search") {
-                        val searchPageView by lazy {
-                            SearchPageView(
-                                navController,
-                                fileViewModel,
-                                searchHistoryPref.toList(),
-                                onSearchHistoryChange,
+                }
+
+                MaterialFileJetpackComposeTheme(isInDarkTheme = isDarkTheme) {
+                    val navController = rememberNavController()
+                    NavHost(navController = navController, startDestination = "home") {
+                        composable("home") {
+                            val homePageView by lazy { HomePageView(navController, fileViewModel) }
+                            homePageView.HomePage()
+                        }
+                        composable("settings") {
+                            val settingsPageView by lazy { SettingsPageView(navController) }
+                            settingsPageView.SettingsPage(isDarkTheme, onDarkModeChange)
+                        }
+                        composable("search") {
+                            val searchPageView by lazy {
+                                SearchPageView(
+                                    navController,
+                                    fileViewModel,
+                                    searchHistoryPref.toList(),
+                                    onSearchHistoryChange,
+                                )
+                            }
+                            searchPageView.SearchPage()
+                        }
+                        composable("about") {
+                            val scrollState = rememberScrollState()
+                            val infiniteTransition = rememberInfiniteTransition(label = "")
+                            val scrollAmount by infiniteTransition.animateFloat(
+                                initialValue = 0f,
+                                targetValue = 2000f, // adjust this value based on your content height
+                                animationSpec = infiniteRepeatable(
+                                    animation = tween(
+                                        1000,
+                                        easing = LinearEasing
+                                    ), // adjust duration based on your preference
+                                    repeatMode = RepeatMode.Restart
+                                ), label = ""
                             )
-                        }
-                        searchPageView.SearchPage()
-                    }
-                    composable("about") {
-                        val scrollState = rememberScrollState()
-                        val infiniteTransition = rememberInfiniteTransition(label = "")
-                        val scrollAmount by infiniteTransition.animateFloat(
-                            initialValue = 0f,
-                            targetValue = 2000f, // adjust this value based on your content height
-                            animationSpec = infiniteRepeatable(
-                                animation = tween(1000, easing = LinearEasing), // adjust duration based on your preference
-                                repeatMode = RepeatMode.Restart
-                            ), label = ""
-                        )
 
-                        LaunchedEffect(scrollAmount) {
-                            scrollState.animateScrollTo(scrollAmount.toInt())
-                        }
+                            LaunchedEffect(scrollAmount) {
+                                scrollState.animateScrollTo(scrollAmount.toInt())
+                            }
 
                         Column(
                             modifier = Modifier
@@ -251,11 +259,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        fileViewModel.cleanup()
-    }
-
     @Composable
     fun ExitAlertDialog(
         title: String,
@@ -299,34 +302,32 @@ class MainActivity : ComponentActivity() {
 
     @OptIn(ExperimentalPermissionsApi::class)
     @Composable
-    private fun HandleRequestPersimmon() {
+    private fun HandleRequestPermission() {
+        val context = LocalContext.current
         val permissionState = rememberPermissionState(Manifest.permission.MANAGE_EXTERNAL_STORAGE)
-        if (Environment.isExternalStorageManager()) return
 
-        if (permissionState.status.shouldShowRationale) {
-            AlertDialog(
-                onDismissRequest = { permissionState.launchPermissionRequest() },
-                title = { Text("Permission Request") },
-                text = { Text("This permission is needed to access external storage") },
-                confirmButton = {
-                    Button(
-                        onClick = { permissionState.launchPermissionRequest() }
-                    ) {
-                        Text("OK")
-                    }
-                }
-            )
-        } else {
-            try {
-                val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
-                intent.data = Uri.parse("package:$packageName")
-                startActivity(intent)
-            } catch (e: Exception) {
-                val intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
-                startActivity(intent)
-            }
+        // Check permission status BEFORE displaying the composable
+        if (Environment.isExternalStorageManager()) {
+            // Permission already granted, proceed with your app logic
+            // (Display main content or other composables)
+            return // No need to show dialog or anything else
         }
+
+        // Show rationale OR launch system settings ONLY if permission is needed
+        AlertDialog(
+            onDismissRequest = { Toast.makeText(context, "Permission required", Toast.LENGTH_SHORT).show()},
+            title = { Text("Permission Required") },
+            text = { Text("This app needs full access to files and media to function properly. Please grant permission in settings.") },
+            confirmButton = {
+                Button(onClick = {
+                    context.startActivity(Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION))
+                }) {
+                    Text("Open Settings")
+                }
+            }
+        )
     }
+
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     @OptIn(ExperimentalPermissionsApi::class)

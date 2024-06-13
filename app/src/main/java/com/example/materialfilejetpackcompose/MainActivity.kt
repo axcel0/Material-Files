@@ -328,14 +328,13 @@ class MainActivity : ComponentActivity() {
         )
     }
 
-
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     @OptIn(ExperimentalPermissionsApi::class)
     @Composable
     fun HandleMultiplePermissions() {
         val context = LocalContext.current
         val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == Activity.RESULT_OK) {
+            if (result.resultCode == RESULT_OK) {
                 // Handle the result
                 Toast.makeText(context, "Permission granted", Toast.LENGTH_SHORT).show()
             }
@@ -412,7 +411,7 @@ class MainActivity : ComponentActivity() {
     fun HandleActivityResult() {
         val context = LocalContext.current
         val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == Activity.RESULT_OK) {
+            if (result.resultCode == RESULT_OK) {
                 // Handle the result
                 Toast.makeText(context, "Permission granted", Toast.LENGTH_SHORT).show()
             }

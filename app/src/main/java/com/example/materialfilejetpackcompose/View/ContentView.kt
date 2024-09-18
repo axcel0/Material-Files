@@ -16,6 +16,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,6 +24,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ListItem
@@ -73,26 +81,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.tv.foundation.lazy.grid.TvGridCells
-import androidx.tv.foundation.lazy.grid.TvLazyVerticalGrid
-import androidx.tv.foundation.lazy.grid.items
-import androidx.tv.foundation.lazy.grid.rememberTvLazyGridState
-import androidx.tv.foundation.lazy.list.TvLazyColumn
-import androidx.tv.foundation.lazy.list.items
-import androidx.tv.foundation.lazy.list.rememberTvLazyListState
-import coil.compose.AsyncImagePainter
-import coil.compose.ImagePainter
 import coil.compose.rememberAsyncImagePainter
-import coil.compose.rememberImagePainter
 import coil.request.ImageRequest
 import com.example.materialfilejetpackcompose.ViewModel.FileViewModel
 import com.example.materialfilejetpackcompose.ViewModel.SortType
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.io.File
 
 class ContentView(private val fileViewModel: FileViewModel) {
@@ -468,18 +463,23 @@ class ContentView(private val fileViewModel: FileViewModel) {
     ) {
         val refreshKey by remember { mutableIntStateOf(0) }
         if (isGridView) {
-            TvLazyVerticalGrid(
-                columns = TvGridCells.Adaptive(200.dp),
-                modifier = Modifier
-                    .fillMaxSize(),
-                state = rememberTvLazyGridState(refreshKey),
+            val gridState = rememberLazyGridState(initialFirstVisibleItemIndex = refreshKey)
+            LazyVerticalGrid(
+                columns = GridCells.Adaptive(200.dp),
+                state = gridState,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(0.dp),
+                reverseLayout = false,
+                verticalArrangement = Arrangement.Top,
+                horizontalArrangement = Arrangement.Start,
+                userScrollEnabled = true
             ) {
-                var sortedFiles : List<File>
+                var sortedFiles: List<File>
                 sortedFiles = when (sortType) {
-                    SortType.NAME -> { files.sortedBy { it.name } }
-                    SortType.DATE -> { files.sortedBy { it.lastModified() } }
-                    SortType.SIZE -> { files.sortedBy { it.length() } }
-                    SortType.TYPE -> { files.sortedBy { it.extension } }
+                    SortType.NAME -> files.sortedBy { it.name }
+                    SortType.DATE -> files.sortedBy { it.lastModified() }
+                    SortType.SIZE -> files.sortedBy { it.length() }
+                    SortType.TYPE -> files.sortedBy { it.extension }
                 }
                 if (!isAscending) sortedFiles = sortedFiles.reversed()
                 items(sortedFiles) { file ->
@@ -487,16 +487,17 @@ class ContentView(private val fileViewModel: FileViewModel) {
                 }
             }
         } else {
-            TvLazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                state = rememberTvLazyListState(refreshKey)
+            val listState = rememberLazyListState(initialFirstVisibleItemIndex = refreshKey)
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize()
             ) {
-                var sortedFiles : List<File>
+                var sortedFiles: List<File>
                 sortedFiles = when (sortType) {
-                    SortType.NAME -> { files.sortedBy { it.name } }
-                    SortType.DATE -> { files.sortedBy { it.lastModified() } }
-                    SortType.SIZE -> { files.sortedBy { it.length() } }
-                    SortType.TYPE -> { files.sortedBy { it.extension } }
+                    SortType.NAME -> files.sortedBy { it.name }
+                    SortType.DATE -> files.sortedBy { it.lastModified() }
+                    SortType.SIZE -> files.sortedBy { it.length() }
+                    SortType.TYPE -> files.sortedBy { it.extension }
                 }
                 if (!isAscending) sortedFiles = sortedFiles.reversed()
                 items(sortedFiles) { file ->

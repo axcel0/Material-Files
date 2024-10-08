@@ -3,7 +3,7 @@ package com.example.materialfilejetpackcompose.ViewModel
 import androidx.lifecycle.ViewModel
 
 class PersimmonViewModel : ViewModel() {
-    val visiblePersimmonDialogQueue = mutableListOf<String>()
+    private val visiblePersimmonDialogQueue = mutableListOf<String>()
 
     fun dismissPersimmonDialog() {
         visiblePersimmonDialogQueue.removeFirstOrNull()

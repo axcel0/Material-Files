@@ -168,7 +168,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                MaterialFileJetpackComposeTheme(isInDarkTheme = isDarkTheme) {
+                MaterialFileJetpackComposeTheme() {
                     val navController = rememberNavController()
                     NavHost(navController = navController, startDestination = "home") {
                         composable("home") {
